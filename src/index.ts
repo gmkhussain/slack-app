@@ -3,6 +3,7 @@ import type { IncomingMessage } from "node:http";
 import { App, LogLevel } from "@slack/bolt";
 import { config, isChannelAllowed, useSocketMode } from "./config.js";
 import { askWorker } from "./qikoClient.js";
+import { tryCreateChannelFromMessage } from "./channelActions.js";
 import { isEmptyQuestion, stripMentions } from "./messageUtils.js";
 import { resolveListenPort } from "./port.js";
 import {
@@ -137,7 +138,9 @@ async function onMentionMessage(params: {
   console.log(`[slack] mention in ${channel}: "${question}"`);
 
   if (isEmptyQuestion(question)) {
-    const greeting = "Hi! Ask me anything — for example: `tell 2 + 2?`";
+    const greeting =
+      "Hi! Ask me anything — for example: `tell 2 + 2?`\n" +
+      "Or: `create channel with name of 'my-team'`";
     if (say) {
       await say({ thread_ts: threadTs, text: greeting });
     } else {
@@ -145,6 +148,15 @@ async function onMentionMessage(params: {
     }
     return;
   }
+
+  const createdChannel = await tryCreateChannelFromMessage({
+    client,
+    text: question,
+    replyChannel: channel,
+    threadTs,
+    requesterUserId: userId,
+  });
+  if (createdChannel) return;
 
   await handleWorkerQuestion({ client, channel, threadTs, userId, question });
 }
