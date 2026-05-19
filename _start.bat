@@ -24,6 +24,14 @@ if not exist "node_modules\" (
         pause
         exit /b 1
     )
+) else if not exist "node_modules\typescript\bin\tsc" (
+    echo node_modules incomplete - reinstalling dependencies...
+    call npm install
+    if errorlevel 1 (
+        echo npm install failed.
+        pause
+        exit /b 1
+    )
 )
 
 REM ngrok: project bin, Laragon, then PATH
