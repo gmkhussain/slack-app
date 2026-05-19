@@ -6,6 +6,7 @@ import { askWorker } from "./qikoClient.js";
 import {
   tryCreateChannelFromMessage,
   tryDeleteChannelFromMessage,
+  tryRenameChannelFromMessage,
 } from "./channelActions.js";
 import { isEmptyQuestion, stripMentions } from "./messageUtils.js";
 import { resolveListenPort } from "./port.js";
@@ -143,7 +144,7 @@ async function onMentionMessage(params: {
   if (isEmptyQuestion(question)) {
     const greeting =
       "Hi! Ask me anything — for example: `tell 2 + 2?`\n" +
-      "Channels: `create channel with name of 'my-team'` | `delete channel with name of 'my-team'`";
+      "Channels: `create channel with name of 'my-team'` | `delete channel xyz` | `rename channel xyz to new-name`";
     if (say) {
       await say({ thread_ts: threadTs, text: greeting });
     } else {
@@ -159,6 +160,14 @@ async function onMentionMessage(params: {
     threadTs,
   });
   if (deletedChannel) return;
+
+  const renamedChannel = await tryRenameChannelFromMessage({
+    client,
+    text: question,
+    replyChannel: channel,
+    threadTs,
+  });
+  if (renamedChannel) return;
 
   const createdChannel = await tryCreateChannelFromMessage({
     client,

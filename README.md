@@ -112,9 +112,10 @@ In any channel where the bot is invited:
 ```
 @LinkstarBot create channel with name of 'abc'
 @LinkstarBot delete channel with name of 'abc'
+@LinkstarBot rename channel xyz to new-name
 ```
 
-Also works: `create channel named abc`, `create a private channel called my-team`, `remove channel abc`, `archive channel abc`.
+Also works: `create channel named abc`, `create a private channel called my-team`, `remove channel abc`, `archive channel abc`, `rename channel from xyz to new-name`.
 
 The name is normalized for Slack (`My Team` → `my-team`). **Delete** archives the channel (Slack’s normal “delete” for workspace channels). Requires `channels:manage` + `channels:read` for public (and `groups:write` + `groups:read` for private); reinstall the app after adding scopes.
 

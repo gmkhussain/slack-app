@@ -2,6 +2,7 @@ import type { WebClient } from "@slack/web-api";
 import {
   parseCreateChannelRequest,
   parseDeleteChannelRequest,
+  parseRenameChannelRequest,
 } from "./messageUtils.js";
 
 function slackErrorData(error: unknown): {
@@ -21,7 +22,7 @@ function slackErrorData(error: unknown): {
 
 function slackApiErrorMessage(
   error: unknown,
-  context: "create" | "delete" | "find"
+  context: "create" | "delete" | "find" | "rename"
 ): string {
   const { error: code, needed, provided } = slackErrorData(error);
 
@@ -41,7 +42,7 @@ function slackApiErrorMessage(
         needed ??
         (context === "find"
           ? "channels:read"
-          : context === "delete"
+          : context === "delete" || context === "rename"
             ? "channels:manage"
             : "channels:manage");
       let msg = `Missing OAuth scope: \`${need}\`. Add it at api.slack.com → your app → OAuth & Permissions → Bot Token Scopes, then Reinstall to workspace and update SLACK_BOT_TOKEN in .env.`;
@@ -49,7 +50,7 @@ function slackApiErrorMessage(
         msg += ` (token currently has: ${provided})`;
       }
       msg +=
-        " For delete public channel #xyz add: channels:read, channels:manage.";
+        " For channel commands on public channels add: channels:read, channels:manage.";
       return msg;
     }
     case "restricted_action":
@@ -64,6 +65,9 @@ function slackApiErrorMessage(
       }
       if (context === "delete") {
         return error instanceof Error ? error.message : "Could not archive channel.";
+      }
+      if (context === "rename") {
+        return error instanceof Error ? error.message : "Could not rename channel.";
       }
       return error instanceof Error ? error.message : "Could not create channel.";
   }
@@ -210,6 +214,82 @@ export async function tryDeleteChannelFromMessage(params: {
       channel: params.replyChannel,
       thread_ts: params.threadTs,
       text: `Could not delete channel \`${name}\`: ${slackApiErrorMessage(error, "delete")}`,
+    });
+  }
+
+  return true;
+}
+
+export async function tryRenameChannelFromMessage(params: {
+  client: WebClient;
+  text: string;
+  replyChannel: string;
+  threadTs: string;
+}): Promise<boolean> {
+  const parsed = parseRenameChannelRequest(params.text);
+  if (!parsed) return false;
+
+  const { fromName, toName } = parsed;
+
+  if (fromName === toName) {
+    await params.client.chat.postMessage({
+      channel: params.replyChannel,
+      thread_ts: params.threadTs,
+      text: `Channel is already named \`${toName}\`.`,
+    });
+    return true;
+  }
+
+  try {
+    let found: { id: string; name: string; isPrivate: boolean } | null;
+    try {
+      found = await findChannelByName(params.client, fromName);
+    } catch (error) {
+      console.error("[slack] find channel error:", error);
+      await params.client.chat.postMessage({
+        channel: params.replyChannel,
+        thread_ts: params.threadTs,
+        text: `Could not look up channel \`${fromName}\`: ${slackApiErrorMessage(error, "find")}`,
+      });
+      return true;
+    }
+
+    if (!found) {
+      await params.client.chat.postMessage({
+        channel: params.replyChannel,
+        thread_ts: params.threadTs,
+        text: `No active channel named \`${fromName}\` was found.`,
+      });
+      return true;
+    }
+
+    try {
+      const result = await params.client.conversations.rename({
+        channel: found.id,
+        name: toName,
+      });
+      const updatedName = result.channel?.name ?? toName;
+      const link = found.id ? `<#${found.id}>` : `#${updatedName}`;
+      const kind = found.isPrivate ? "private channel" : "channel";
+      await params.client.chat.postMessage({
+        channel: params.replyChannel,
+        thread_ts: params.threadTs,
+        text: `Renamed ${kind} \`#${found.name}\` → ${link} (\`#${updatedName}\`).`,
+      });
+    } catch (error) {
+      console.error("[slack] rename channel error:", error);
+      await params.client.chat.postMessage({
+        channel: params.replyChannel,
+        thread_ts: params.threadTs,
+        text: `Found #${found.name} but could not rename to \`${toName}\`: ${slackApiErrorMessage(error, "rename")}`,
+      });
+    }
+  } catch (error) {
+    console.error("[slack] rename channel error:", error);
+    await params.client.chat.postMessage({
+      channel: params.replyChannel,
+      thread_ts: params.threadTs,
+      text: `Could not rename channel \`${fromName}\` to \`${toName}\`: ${slackApiErrorMessage(error, "rename")}`,
     });
   }
 

@@ -70,3 +70,27 @@ export function parseDeleteChannelRequest(
 
   return { name };
 }
+
+export interface RenameChannelRequest {
+  fromName: string;
+  toName: string;
+}
+
+/**
+ * Matches: "rename channel xyz to abc", "rename channel from xyz to abc", etc.
+ */
+export function parseRenameChannelRequest(
+  text: string
+): RenameChannelRequest | null {
+  const normalized = text.trim();
+  const match = normalized.match(
+    /^rename\s+(?:a\s+)?channel\s+(?:(?:from|with\s+name\s+of)\s+)?(.+?)\s+(?:to|as)\s+(.+)$/i
+  );
+  if (!match) return null;
+
+  const fromName = sanitizeSlackChannelName(match[1] ?? "");
+  const toName = sanitizeSlackChannelName(match[2] ?? "");
+  if (!fromName || !toName) return null;
+
+  return { fromName, toName };
+}
