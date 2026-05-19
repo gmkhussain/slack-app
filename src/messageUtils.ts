@@ -6,6 +6,13 @@ export function stripMentions(text: string): string {
   return text.replace(/<@[A-Z0-9]+>/gi, "").replace(/\s+/g, " ").trim();
 }
 
+/** Remove only the bot mention so other @users in the message are kept (e.g. invite user). */
+export function stripBotMention(text: string, botUserId: string): string {
+  if (!botUserId) return stripMentions(text);
+  const pattern = new RegExp(`<@${botUserId}>`, "gi");
+  return text.replace(pattern, "").replace(/\s+/g, " ").trim();
+}
+
 export function isEmptyQuestion(text: string): boolean {
   return text.length === 0;
 }
@@ -93,4 +100,26 @@ export function parseRenameChannelRequest(
   if (!fromName || !toName) return null;
 
   return { fromName, toName };
+}
+
+export interface InviteUserRequest {
+  userRef: string;
+  channelName: string;
+}
+
+/**
+ * Matches: "invite user @jane to channel xyz", "invite user jane@co.com to xyz", etc.
+ */
+export function parseInviteUserRequest(text: string): InviteUserRequest | null {
+  const normalized = text.trim();
+  const match = normalized.match(
+    /^invite\s+user\s+(.+?)\s+to\s+(?:channel\s+)?(.+)$/i
+  );
+  if (!match) return null;
+
+  const userRef = (match[1] ?? "").trim();
+  const channelName = sanitizeSlackChannelName(match[2] ?? "");
+  if (!userRef || !channelName) return null;
+
+  return { userRef, channelName };
 }

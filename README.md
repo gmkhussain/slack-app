@@ -30,7 +30,7 @@ Yeh wahi endpoint hai jo frontend `sendPublicAvatarMessage` use karta hai (`clie
    - `groups:write` (create/archive private channels)
    - `groups:read` (find private channel by name for delete)
    - `users:read` (optional, email ke liye)
-   - `users:read.email` (optional)
+   - `users:read.email` (invite user by email; optional for Qiko email)
    - `im:history`, `im:write` (agar DM support chahiye)
 4. **Event Subscriptions** → ON → Subscribe to bot events:
    - `app_mention`
@@ -113,9 +113,12 @@ In any channel where the bot is invited:
 @LinkstarBot create channel with name of 'abc'
 @LinkstarBot delete channel with name of 'abc'
 @LinkstarBot rename channel xyz to new-name
+@LinkstarBot invite user @jane to channel my-team
 ```
 
-Also works: `create channel named abc`, `create a private channel called my-team`, `remove channel abc`, `archive channel abc`, `rename channel from xyz to new-name`.
+Also works: `create channel named abc`, `create a private channel called my-team`, `remove channel abc`, `archive channel abc`, `rename channel from xyz to new-name`, `invite user jane@company.com to channel my-team`.
+
+**Invite user** adds an existing workspace member to a channel (not a new workspace signup). Use `@mention`, email, or user ID (`U…`). The bot must be in the target channel (`/invite @LinkstarBot` in private channels).
 
 The name is normalized for Slack (`My Team` → `my-team`). **Delete** archives the channel (Slack’s normal “delete” for workspace channels). Requires `channels:manage` + `channels:read` for public (and `groups:write` + `groups:read` for private); reinstall the app after adding scopes.
 

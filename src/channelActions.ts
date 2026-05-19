@@ -2,6 +2,7 @@ import type { WebClient } from "@slack/web-api";
 import {
   parseCreateChannelRequest,
   parseDeleteChannelRequest,
+  parseInviteUserRequest,
   parseRenameChannelRequest,
 } from "./messageUtils.js";
 
@@ -22,7 +23,7 @@ function slackErrorData(error: unknown): {
 
 function slackApiErrorMessage(
   error: unknown,
-  context: "create" | "delete" | "find" | "rename"
+  context: "create" | "delete" | "find" | "rename" | "invite"
 ): string {
   const { error: code, needed, provided } = slackErrorData(error);
 
@@ -42,7 +43,9 @@ function slackApiErrorMessage(
         needed ??
         (context === "find"
           ? "channels:read"
-          : context === "delete" || context === "rename"
+          : context === "delete" ||
+              context === "rename" ||
+              context === "invite"
             ? "channels:manage"
             : "channels:manage");
       let msg = `Missing OAuth scope: \`${need}\`. Add it at api.slack.com → your app → OAuth & Permissions → Bot Token Scopes, then Reinstall to workspace and update SLACK_BOT_TOKEN in .env.`;
@@ -59,6 +62,15 @@ function slackApiErrorMessage(
       return "The #general channel cannot be archived.";
     case "already_archived":
       return "That channel is already archived.";
+    case "already_in_channel":
+      return "That user is already in the channel.";
+    case "cant_invite":
+      return "That user cannot be invited to this channel.";
+    case "users_not_found":
+      return "User not found or not in this workspace.";
+    case "users_list_not_yet_supported":
+    case "user_not_found":
+      return "User not found. Use an @mention, workspace email, or user ID (U…).";
     default:
       if (context === "find") {
         return error instanceof Error ? error.message : "Could not find channel.";
@@ -68,6 +80,9 @@ function slackApiErrorMessage(
       }
       if (context === "rename") {
         return error instanceof Error ? error.message : "Could not rename channel.";
+      }
+      if (context === "invite") {
+        return error instanceof Error ? error.message : "Could not invite user.";
       }
       return error instanceof Error ? error.message : "Could not create channel.";
   }
@@ -100,6 +115,38 @@ async function findChannelByName(
 
     cursor = result.response_metadata?.next_cursor || undefined;
   } while (cursor);
+
+  return null;
+}
+
+async function resolveSlackUserId(
+  client: WebClient,
+  userRef: string
+): Promise<{ id: string; label: string } | null> {
+  const raw = userRef.trim();
+  const mention = raw.match(/^<@(U[A-Z0-9]+)>$/i);
+  if (mention?.[1]) {
+    return { id: mention[1].toUpperCase(), label: `<@${mention[1]}>` };
+  }
+
+  const unquoted = raw.replace(/^['"]|['"]$/g, "").trim();
+  if (/^U[A-Z0-9]{8,}$/i.test(unquoted)) {
+    return { id: unquoted.toUpperCase(), label: unquoted };
+  }
+
+  if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(unquoted)) {
+    try {
+      const result = await client.users.lookupByEmail({ email: unquoted });
+      const id = result.user?.id;
+      if (id) {
+        const label =
+          result.user?.real_name || result.user?.name || unquoted;
+        return { id, label };
+      }
+    } catch {
+      return null;
+    }
+  }
 
   return null;
 }
@@ -214,6 +261,83 @@ export async function tryDeleteChannelFromMessage(params: {
       channel: params.replyChannel,
       thread_ts: params.threadTs,
       text: `Could not delete channel \`${name}\`: ${slackApiErrorMessage(error, "delete")}`,
+    });
+  }
+
+  return true;
+}
+
+export async function tryInviteUserFromMessage(params: {
+  client: WebClient;
+  text: string;
+  replyChannel: string;
+  threadTs: string;
+}): Promise<boolean> {
+  const parsed = parseInviteUserRequest(params.text);
+  if (!parsed) return false;
+
+  const { userRef, channelName } = parsed;
+
+  try {
+    const slackUser = await resolveSlackUserId(params.client, userRef);
+    if (!slackUser) {
+      await params.client.chat.postMessage({
+        channel: params.replyChannel,
+        thread_ts: params.threadTs,
+        text:
+          "Could not find that user. Mention them in Slack (`@name`), use their workspace email, or a user ID (`U…`).",
+      });
+      return true;
+    }
+
+    let found: { id: string; name: string; isPrivate: boolean } | null;
+    try {
+      found = await findChannelByName(params.client, channelName);
+    } catch (error) {
+      console.error("[slack] find channel error:", error);
+      await params.client.chat.postMessage({
+        channel: params.replyChannel,
+        thread_ts: params.threadTs,
+        text: `Could not look up channel \`${channelName}\`: ${slackApiErrorMessage(error, "find")}`,
+      });
+      return true;
+    }
+
+    if (!found) {
+      await params.client.chat.postMessage({
+        channel: params.replyChannel,
+        thread_ts: params.threadTs,
+        text: `No active channel named \`${channelName}\` was found.`,
+      });
+      return true;
+    }
+
+    try {
+      await params.client.conversations.invite({
+        channel: found.id,
+        users: slackUser.id,
+      });
+
+      const link = `<#${found.id}>`;
+      await params.client.chat.postMessage({
+        channel: params.replyChannel,
+        thread_ts: params.threadTs,
+        text: `Invited ${slackUser.label} to ${link} (\`#${found.name}\`).`,
+      });
+    } catch (error) {
+      console.error("[slack] invite user error:", error);
+      await params.client.chat.postMessage({
+        channel: params.replyChannel,
+        thread_ts: params.threadTs,
+        text: `Could not invite ${slackUser.label} to #${found.name}: ${slackApiErrorMessage(error, "invite")}`,
+      });
+    }
+  } catch (error) {
+    console.error("[slack] invite user error:", error);
+    await params.client.chat.postMessage({
+      channel: params.replyChannel,
+      thread_ts: params.threadTs,
+      text: `Could not invite user to \`${channelName}\`: ${slackApiErrorMessage(error, "invite")}`,
     });
   }
 

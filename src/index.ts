@@ -6,9 +6,10 @@ import { askWorker } from "./qikoClient.js";
 import {
   tryCreateChannelFromMessage,
   tryDeleteChannelFromMessage,
+  tryInviteUserFromMessage,
   tryRenameChannelFromMessage,
 } from "./channelActions.js";
-import { isEmptyQuestion, stripMentions } from "./messageUtils.js";
+import { isEmptyQuestion, stripBotMention, stripMentions } from "./messageUtils.js";
 import { resolveListenPort } from "./port.js";
 import {
   BOLT_EVENTS_PATH,
@@ -133,18 +134,20 @@ async function onMentionMessage(params: {
   threadTs: string;
   userId: string | undefined;
   text: string;
+  botUserId: string;
   say?: (msg: { thread_ts: string; text: string }) => Promise<unknown>;
 }): Promise<void> {
-  const { client, channel, threadTs, userId, text, say } = params;
+  const { client, channel, threadTs, userId, text, botUserId, say } = params;
   if (!isChannelAllowed(channel)) return;
 
-  const question = stripMentions(text);
+  const question = stripBotMention(text, botUserId);
   console.log(`[slack] mention in ${channel}: "${question}"`);
 
   if (isEmptyQuestion(question)) {
     const greeting =
       "Hi! Ask me anything — for example: `tell 2 + 2?`\n" +
-      "Channels: `create channel with name of 'my-team'` | `delete channel xyz` | `rename channel xyz to new-name`";
+      "Channels: `create channel with name of 'my-team'` | `delete channel xyz` | `rename channel xyz to new-name`\n" +
+      "Invite: `invite user @name to channel my-team` (or email / U… id)";
     if (say) {
       await say({ thread_ts: threadTs, text: greeting });
     } else {
@@ -178,6 +181,14 @@ async function onMentionMessage(params: {
   });
   if (createdChannel) return;
 
+  const invitedUser = await tryInviteUserFromMessage({
+    client,
+    text: question,
+    replyChannel: channel,
+    threadTs,
+  });
+  if (invitedUser) return;
+
   await handleWorkerQuestion({ client, channel, threadTs, userId, question });
 }
 
@@ -191,6 +202,7 @@ function registerHandlers(botUserId: string): void {
       threadTs: event.thread_ts ?? event.ts,
       userId: event.user,
       text: event.text ?? "",
+      botUserId,
       say,
     });
   });
@@ -231,6 +243,7 @@ function registerHandlers(botUserId: string): void {
         threadTs: message.ts,
         userId,
         text: message.text,
+        botUserId,
       });
     }
   });
