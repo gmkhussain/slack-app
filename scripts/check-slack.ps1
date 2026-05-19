@@ -60,6 +60,39 @@ try {
   }
 } catch { }
 
+$botToken = $null
+Get-Content ".env" | ForEach-Object {
+  if ($_ -match '^\s*SLACK_BOT_TOKEN\s*=\s*(.+)') { $botToken = $Matches[1].Trim().Trim('"').Trim("'") }
+}
+if ($botToken) {
+  Write-Host ""
+  Write-Host "=== Bot token scopes (channel delete needs channels:read + channels:manage) ===" -ForegroundColor Cyan
+  $headers = @{ Authorization = "Bearer $botToken" }
+  try {
+    $r = Invoke-RestMethod -Uri "https://slack.com/api/conversations.list?types=public_channel&limit=1" -Headers $headers -Method Get
+    if ($r.ok) { Write-Host "[OK] channels:read (list public channels)" -ForegroundColor Green }
+    elseif ($r.error -eq "missing_scope") { Write-Host "[FAIL] channels:read — add scope: $($r.needed)" -ForegroundColor Red }
+    else { Write-Host "[?] conversations.list — $($r.error)" -ForegroundColor Yellow }
+  } catch { Write-Host "[FAIL] conversations.list — $($_.Exception.Message)" -ForegroundColor Red }
+
+  try {
+    $body = @{ channel = "C0000000000" } | ConvertTo-Json
+    $r = Invoke-RestMethod -Uri "https://slack.com/api/conversations.archive" -Headers $headers -Method Post -Body $body -ContentType "application/json; charset=utf-8"
+    if ($r.error -eq "missing_scope") {
+      Write-Host "[FAIL] channels:manage — add scope: $($r.needed)" -ForegroundColor Red
+    } elseif ($r.error -eq "channel_not_found" -or $r.error -eq "invalid_auth") {
+      Write-Host "[OK] channels:manage (archive permission present)" -ForegroundColor Green
+    } else {
+      Write-Host "[OK] channels:manage (got $($r.error), scope likely OK)" -ForegroundColor Green
+    }
+  } catch { Write-Host "[FAIL] conversations.archive probe — $($_.Exception.Message)" -ForegroundColor Red }
+  try {
+    $auth = Invoke-RestMethod -Uri "https://slack.com/api/auth.test" -Headers $headers -Method Post
+    if ($auth.ok) { Write-Host "[OK] Token valid for team: $($auth.team) bot: $($auth.user)" -ForegroundColor Green }
+    else { Write-Host "[FAIL] auth.test: $($auth.error)" -ForegroundColor Red }
+  } catch { }
+}
+
 Write-Host ""
 Write-Host "OAuth scopes are NOT enough. Also check:" -ForegroundColor Yellow
 Write-Host "  1. Event Subscriptions: ON"

@@ -1,25 +1,103 @@
 import type { WebClient } from "@slack/web-api";
-import { parseCreateChannelRequest } from "./messageUtils.js";
+import {
+  parseCreateChannelRequest,
+  parseDeleteChannelRequest,
+} from "./messageUtils.js";
 
-function slackErrorMessage(error: unknown): string {
-  const data =
-    error && typeof error === "object" && "data" in error
-      ? (error as { data?: { error?: string } }).data
-      : undefined;
-  const code = data?.error;
+function slackErrorData(error: unknown): {
+  error?: string;
+  needed?: string;
+  provided?: string;
+} {
+  if (!error || typeof error !== "object" || !("data" in error)) return {};
+  const data = (error as { data?: Record<string, unknown> }).data;
+  if (!data || typeof data !== "object") return {};
+  return {
+    error: typeof data.error === "string" ? data.error : undefined,
+    needed: typeof data.needed === "string" ? data.needed : undefined,
+    provided: typeof data.provided === "string" ? data.provided : undefined,
+  };
+}
+
+function slackApiErrorMessage(
+  error: unknown,
+  context: "create" | "delete" | "find"
+): string {
+  const { error: code, needed, provided } = slackErrorData(error);
 
   switch (code) {
     case "name_taken":
       return "A channel with that name already exists.";
     case "invalid_name":
       return "That channel name is not allowed (use lowercase letters, numbers, hyphens).";
-    case "missing_scope":
-      return "Bot is missing scope: add `channels:manage` (public) or `groups:write` (private), then reinstall the app.";
+    case "channel_not_found":
+      return context === "find"
+        ? "No active channel with that name was found."
+        : "Channel not found.";
+    case "not_in_channel":
+      return "The bot must be a member of that channel. Invite @LinkstarBot to `#channel` first, or use a channel the bot can access.";
+    case "missing_scope": {
+      const need =
+        needed ??
+        (context === "find"
+          ? "channels:read"
+          : context === "delete"
+            ? "channels:manage"
+            : "channels:manage");
+      let msg = `Missing OAuth scope: \`${need}\`. Add it at api.slack.com → your app → OAuth & Permissions → Bot Token Scopes, then Reinstall to workspace and update SLACK_BOT_TOKEN in .env.`;
+      if (provided) {
+        msg += ` (token currently has: ${provided})`;
+      }
+      msg +=
+        " For delete public channel #xyz add: channels:read, channels:manage.";
+      return msg;
+    }
     case "restricted_action":
-      return "Your workspace does not allow this bot to create channels.";
+      return "Your workspace does not allow this bot to manage channels.";
+    case "cant_archive_general":
+      return "The #general channel cannot be archived.";
+    case "already_archived":
+      return "That channel is already archived.";
     default:
+      if (context === "find") {
+        return error instanceof Error ? error.message : "Could not find channel.";
+      }
+      if (context === "delete") {
+        return error instanceof Error ? error.message : "Could not archive channel.";
+      }
       return error instanceof Error ? error.message : "Could not create channel.";
   }
+}
+
+async function findChannelByName(
+  client: WebClient,
+  name: string
+): Promise<{ id: string; name: string; isPrivate: boolean } | null> {
+  const target = name.toLowerCase();
+  let cursor: string | undefined;
+
+  do {
+    const result = await client.conversations.list({
+      types: "public_channel,private_channel",
+      exclude_archived: true,
+      limit: 200,
+      cursor,
+    });
+
+    for (const ch of result.channels ?? []) {
+      if (ch.id && ch.name?.toLowerCase() === target) {
+        return {
+          id: ch.id,
+          name: ch.name,
+          isPrivate: ch.is_private ?? false,
+        };
+      }
+    }
+
+    cursor = result.response_metadata?.next_cursor || undefined;
+  } while (cursor);
+
+  return null;
 }
 
 export async function tryCreateChannelFromMessage(params: {
@@ -67,7 +145,71 @@ export async function tryCreateChannelFromMessage(params: {
     await params.client.chat.postMessage({
       channel: params.replyChannel,
       thread_ts: params.threadTs,
-      text: `Could not create channel \`${name}\`: ${slackErrorMessage(error)}`,
+      text: `Could not create channel \`${name}\`: ${slackApiErrorMessage(error, "create")}`,
+    });
+  }
+
+  return true;
+}
+
+export async function tryDeleteChannelFromMessage(params: {
+  client: WebClient;
+  text: string;
+  replyChannel: string;
+  threadTs: string;
+}): Promise<boolean> {
+  const parsed = parseDeleteChannelRequest(params.text);
+  if (!parsed) return false;
+
+  const { name } = parsed;
+
+  try {
+    let found: { id: string; name: string; isPrivate: boolean } | null;
+    try {
+      found = await findChannelByName(params.client, name);
+    } catch (error) {
+      console.error("[slack] find channel error:", error);
+      await params.client.chat.postMessage({
+        channel: params.replyChannel,
+        thread_ts: params.threadTs,
+        text: `Could not look up channel \`${name}\`: ${slackApiErrorMessage(error, "find")}`,
+      });
+      return true;
+    }
+
+    if (!found) {
+      await params.client.chat.postMessage({
+        channel: params.replyChannel,
+        thread_ts: params.threadTs,
+        text: `No active channel named \`${name}\` was found.`,
+      });
+      return true;
+    }
+
+    try {
+      await params.client.conversations.archive({ channel: found.id });
+    } catch (error) {
+      console.error("[slack] archive channel error:", error);
+      await params.client.chat.postMessage({
+        channel: params.replyChannel,
+        thread_ts: params.threadTs,
+        text: `Found #${found.name} but could not archive it: ${slackApiErrorMessage(error, "delete")}`,
+      });
+      return true;
+    }
+
+    const kind = found.isPrivate ? "private channel" : "channel";
+    await params.client.chat.postMessage({
+      channel: params.replyChannel,
+      thread_ts: params.threadTs,
+      text: `Archived ${kind} \`#${found.name}\` (Slack “delete” — channel is archived, not permanently removed).`,
+    });
+  } catch (error) {
+    console.error("[slack] delete channel error:", error);
+    await params.client.chat.postMessage({
+      channel: params.replyChannel,
+      thread_ts: params.threadTs,
+      text: `Could not delete channel \`${name}\`: ${slackApiErrorMessage(error, "delete")}`,
     });
   }
 

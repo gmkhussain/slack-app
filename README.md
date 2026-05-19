@@ -25,8 +25,10 @@ Yeh wahi endpoint hai jo frontend `sendPublicAvatarMessage` use karta hai (`clie
 3. **OAuth & Permissions** → Bot Token Scopes:
    - `app_mentions:read`
    - `chat:write`
-   - `channels:manage` (create public channels — `@LinkstarBot create channel with name of 'abc'`)
-   - `groups:write` (only if you use `create private channel ...`)
+   - `channels:manage` (create/archive public channels)
+   - `channels:read` (find public channel by name for delete)
+   - `groups:write` (create/archive private channels)
+   - `groups:read` (find private channel by name for delete)
    - `users:read` (optional, email ke liye)
    - `users:read.email` (optional)
    - `im:history`, `im:write` (agar DM support chahiye)
@@ -103,17 +105,20 @@ Slack channel:
 
 Bot thread mein worker ka jawab post karega (e.g. `4` — worker knowledge par depend karta hai).
 
-### Create a channel
+### Create / delete a channel
 
 In any channel where the bot is invited:
 
 ```
 @LinkstarBot create channel with name of 'abc'
+@LinkstarBot delete channel with name of 'abc'
 ```
 
-Also works: `create channel named abc`, `create a private channel called my-team`.
+Also works: `create channel named abc`, `create a private channel called my-team`, `remove channel abc`, `archive channel abc`.
 
-The name is normalized for Slack (`My Team` → `my-team`). Requires `channels:manage` (and `groups:write` for private); reinstall the app after adding scopes.
+The name is normalized for Slack (`My Team` → `my-team`). **Delete** archives the channel (Slack’s normal “delete” for workspace channels). Requires `channels:manage` + `channels:read` for public (and `groups:write` + `groups:read` for private); reinstall the app after adding scopes.
+
+The bot must be able to see the target channel (`channels:read` / bot invited to private channels you manage).
 
 ## HTTP mode (production server)
 

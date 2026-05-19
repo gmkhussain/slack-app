@@ -48,3 +48,25 @@ export function parseCreateChannelRequest(
 
   return { name, isPrivate };
 }
+
+export interface DeleteChannelRequest {
+  name: string;
+}
+
+/**
+ * Matches: "delete channel with name of 'abc'", "remove channel named abc", etc.
+ */
+export function parseDeleteChannelRequest(
+  text: string
+): DeleteChannelRequest | null {
+  const normalized = text.trim();
+  const match = normalized.match(
+    /^(?:delete|remove|archive)\s+(?:a\s+)?channel(?:\s+with\s+name\s+of|\s+named|\s+called)?\s+(.+)$/i
+  );
+  if (!match) return null;
+
+  const name = sanitizeSlackChannelName(match[1] ?? "");
+  if (!name) return null;
+
+  return { name };
+}
