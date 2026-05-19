@@ -9,7 +9,14 @@ import {
   tryInviteUserFromMessage,
   tryRenameChannelFromMessage,
 } from "./channelActions.js";
-import { isEmptyQuestion, stripBotMention, stripMentions } from "./messageUtils.js";
+import { tryInviteToWorkspaceFromMessage } from "./workspaceActions.js";
+import {
+  isEmptyQuestion,
+  isWorkspaceInviteCommand,
+  normalizeSlackMessage,
+  stripBotMention,
+  stripMentions,
+} from "./messageUtils.js";
 import { resolveListenPort } from "./port.js";
 import {
   BOLT_EVENTS_PATH,
@@ -140,14 +147,17 @@ async function onMentionMessage(params: {
   const { client, channel, threadTs, userId, text, botUserId, say } = params;
   if (!isChannelAllowed(channel)) return;
 
-  const question = stripBotMention(text, botUserId);
+  const question = normalizeSlackMessage(stripBotMention(text, botUserId));
   console.log(`[slack] mention in ${channel}: "${question}"`);
+  if (isWorkspaceInviteCommand(question)) {
+    console.log("[slack] routing: workspace invite (not Qiko chat)");
+  }
 
   if (isEmptyQuestion(question)) {
     const greeting =
       "Hi! Ask me anything — for example: `tell 2 + 2?`\n" +
       "Channels: `create channel with name of 'my-team'` | `delete channel xyz` | `rename channel xyz to new-name`\n" +
-      "Invite: `invite user @name to channel my-team` (or email / U… id)";
+      "Invite: `invite user @name to channel my-team` | `invite people to workspace email@company.com`";
     if (say) {
       await say({ thread_ts: threadTs, text: greeting });
     } else {
@@ -155,6 +165,14 @@ async function onMentionMessage(params: {
     }
     return;
   }
+
+  const invitedToWorkspace = await tryInviteToWorkspaceFromMessage({
+    client,
+    text: question,
+    replyChannel: channel,
+    threadTs,
+  });
+  if (invitedToWorkspace) return;
 
   const deletedChannel = await tryDeleteChannelFromMessage({
     client,

@@ -13,6 +13,35 @@ export function stripBotMention(text: string, botUserId: string): string {
   return text.replace(pattern, "").replace(/\s+/g, " ").trim();
 }
 
+/** Unwrap Slack autolinks: <mailto:a@b.com|a@b.com>, <#C123|name>, <@U123|name> */
+export function normalizeSlackMessage(text: string): string {
+  return text
+    .replace(/<mailto:([^|>]+)(?:\|[^>]+)?>/gi, "$1")
+    .replace(/<#([A-Z0-9]+)\|([^>]+)>/gi, "#$2")
+    .replace(/<@([A-Z0-9]+)\|([^>]+)>/gi, "<@$1>")
+    .replace(/<([^|>]+)\|([^>]+)>/g, "$2")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+export function extractEmailFromText(text: string): string | null {
+  const mailto = text.match(/<mailto:([^|>]+)/i);
+  if (mailto?.[1]) return mailto[1].trim();
+
+  const plain = text.match(
+    /([a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,})/i
+  );
+  return plain?.[1]?.toLowerCase() ?? null;
+}
+
+export function isWorkspaceInviteCommand(text: string): boolean {
+  const n = normalizeSlackMessage(text);
+  return (
+    /\binvite\b/i.test(n) &&
+    (/\bto\s+workspace\b/i.test(n) || /^workspace\s+invite\b/i.test(n))
+  );
+}
+
 export function isEmptyQuestion(text: string): boolean {
   return text.length === 0;
 }
@@ -112,8 +141,10 @@ export interface InviteUserRequest {
  */
 export function parseInviteUserRequest(text: string): InviteUserRequest | null {
   const normalized = text.trim();
+  if (/\bto\s+workspace\b/i.test(normalized)) return null;
+
   const match = normalized.match(
-    /^invite\s+user\s+(.+?)\s+to\s+(?:channel\s+)?(.+)$/i
+    /^invite\s+user\s+(.+?)\s+to\s+channel\s+(.+)$/i
   );
   if (!match) return null;
 
@@ -122,4 +153,31 @@ export function parseInviteUserRequest(text: string): InviteUserRequest | null {
   if (!userRef || !channelName) return null;
 
   return { userRef, channelName };
+}
+
+export interface InviteToWorkspaceRequest {
+  email: string;
+  channelName?: string;
+}
+
+/**
+ * Matches workspace invites (new people by email), not channel invites.
+ */
+export function parseInviteToWorkspaceRequest(
+  text: string
+): InviteToWorkspaceRequest | null {
+  const normalized = normalizeSlackMessage(text);
+  if (!isWorkspaceInviteCommand(normalized)) return null;
+
+  const email = extractEmailFromText(normalized);
+  if (!email) return null;
+
+  const channelMatch = normalized.match(
+    /\bchannel\s+([a-z0-9][a-z0-9-_]*)/i
+  );
+  const channelName = channelMatch
+    ? sanitizeSlackChannelName(channelMatch[1])
+    : undefined;
+
+  return { email, channelName: channelName || undefined };
 }

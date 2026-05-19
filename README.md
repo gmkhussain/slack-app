@@ -29,6 +29,7 @@ Yeh wahi endpoint hai jo frontend `sendPublicAvatarMessage` use karta hai (`clie
    - `channels:read` (find public channel by name for delete)
    - `groups:write` (create/archive private channels)
    - `groups:read` (find private channel by name for delete)
+   - `admin.users:write` on **User Token Scopes** (not bot) — **invite people to workspace**; see `SLACK_ADMIN_USER_TOKEN` below
    - `users:read` (optional, email ke liye)
    - `users:read.email` (invite user by email; optional for Qiko email)
    - `im:history`, `im:write` (agar DM support chahiye)
@@ -118,7 +119,23 @@ In any channel where the bot is invited:
 
 Also works: `create channel named abc`, `create a private channel called my-team`, `remove channel abc`, `archive channel abc`, `rename channel from xyz to new-name`, `invite user jane@company.com to channel my-team`.
 
-**Invite user** adds an existing workspace member to a channel (not a new workspace signup). Use `@mention`, email, or user ID (`U…`). The bot must be in the target channel (`/invite @LinkstarBot` in private channels).
+**Invite user to channel** adds an existing workspace member to a channel. Use `@mention`, email, or user ID (`U…`). The bot must be in the target channel (`/invite @LinkstarBot` in private channels).
+
+**Invite people to workspace** (new member by email):
+
+```
+@LinkstarBot invite people to workspace jane@company.com
+@LinkstarBot invite user jane@company.com to workspace channel general
+```
+
+**Requires a User OAuth Token** (`xoxp-…`), not the bot token. Bot tokens get `not_allowed_token_type` from `admin.users.invite`.
+
+1. Slack app → **OAuth & Permissions** → **User Token Scopes** → add `admin.users:write`
+2. **Reinstall to workspace** (as workspace admin)
+3. Copy **User OAuth Token** → `.env` as `SLACK_ADMIN_USER_TOKEN=xoxp-...`
+4. Restart the app
+
+Also needs a plan that supports Admin API (often Enterprise Grid / Business+). This sends Slack’s email invite — not the same as adding an existing member to a channel.
 
 The name is normalized for Slack (`My Team` → `my-team`). **Delete** archives the channel (Slack’s normal “delete” for workspace channels). Requires `channels:manage` + `channels:read` for public (and `groups:write` + `groups:read` for private); reinstall the app after adding scopes.
 

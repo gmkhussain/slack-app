@@ -1,5 +1,7 @@
 import type { WebClient } from "@slack/web-api";
 import {
+  extractEmailFromText,
+  normalizeSlackMessage,
   parseCreateChannelRequest,
   parseDeleteChannelRequest,
   parseInviteUserRequest,
@@ -88,7 +90,7 @@ function slackApiErrorMessage(
   }
 }
 
-async function findChannelByName(
+export async function findChannelByName(
   client: WebClient,
   name: string
 ): Promise<{ id: string; name: string; isPrivate: boolean } | null> {
@@ -123,7 +125,7 @@ async function resolveSlackUserId(
   client: WebClient,
   userRef: string
 ): Promise<{ id: string; label: string } | null> {
-  const raw = userRef.trim();
+  const raw = normalizeSlackMessage(userRef.trim());
   const mention = raw.match(/^<@(U[A-Z0-9]+)>$/i);
   if (mention?.[1]) {
     return { id: mention[1].toUpperCase(), label: `<@${mention[1]}>` };
@@ -134,13 +136,13 @@ async function resolveSlackUserId(
     return { id: unquoted.toUpperCase(), label: unquoted };
   }
 
-  if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(unquoted)) {
+  const email = extractEmailFromText(unquoted) ?? extractEmailFromText(raw);
+  if (email) {
     try {
-      const result = await client.users.lookupByEmail({ email: unquoted });
+      const result = await client.users.lookupByEmail({ email });
       const id = result.user?.id;
       if (id) {
-        const label =
-          result.user?.real_name || result.user?.name || unquoted;
+        const label = result.user?.real_name || result.user?.name || email;
         return { id, label };
       }
     } catch {

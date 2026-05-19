@@ -20,6 +20,17 @@ function validateBotToken(botToken: string): void {
   }
 }
 
+function resolveAdminUserToken(): string {
+  const raw = process.env.SLACK_ADMIN_USER_TOKEN?.trim() ?? "";
+  if (!raw) return "";
+  if (!raw.startsWith("xoxp-")) {
+    console.warn(
+      "[slackapp] SLACK_ADMIN_USER_TOKEN should be a User OAuth Token (xoxp-) with admin.users:write — workspace invite may fail."
+    );
+  }
+  return raw;
+}
+
 function resolveAppToken(raw: string): string {
   const trimmed = raw.trim();
   if (!trimmed) return "";
@@ -56,9 +67,17 @@ if (skipSignatureVerify) {
   );
 }
 
+const adminUserToken = resolveAdminUserToken();
+if (!adminUserToken) {
+  console.warn(
+    "[slackapp] SLACK_ADMIN_USER_TOKEN not set — workspace invite commands need a user token (xoxp-); bot token cannot call admin.users.invite."
+  );
+}
+
 export const config = {
   slack: {
     botToken,
+    adminUserToken,
     signingSecret,
     skipSignatureVerify,
     appToken,
