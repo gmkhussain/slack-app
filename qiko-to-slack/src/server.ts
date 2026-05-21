@@ -1,4 +1,20 @@
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
+import { readFileSync, existsSync } from "node:fs";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+
+const here = dirname(fileURLToPath(import.meta.url));
+const PUBLIC_DIR = resolve(here, "../public");
+
+function serveFile(res: ServerResponse, filePath: string, contentType: string): void {
+  if (!existsSync(filePath)) {
+    res.writeHead(404);
+    res.end("Not found");
+    return;
+  }
+  res.writeHead(200, { "Content-Type": contentType });
+  res.end(readFileSync(filePath));
+}
 import { notifyConfig } from "./config.js";
 import { readJsonBody } from "./readJsonBody.js";
 import { joinBotToChannelByName } from "./joinChannel.js";
@@ -180,7 +196,12 @@ async function handleSetConfig(
 const server = createServer(async (req, res) => {
   const url = req.url?.split("?")[0] ?? "/";
 
-  if (req.method === "GET" && (url === "/" || url === "/health")) {
+  if (req.method === "GET" && url === "/") {
+    serveFile(res, resolve(PUBLIC_DIR, "index.html"), "text/html; charset=utf-8");
+    return;
+  }
+
+  if (req.method === "GET" && url === "/health") {
     json(res, 200, { ok: true, service: "qiko-to-slack" });
     return;
   }
@@ -215,6 +236,7 @@ const server = createServer(async (req, res) => {
 
 server.listen(notifyConfig.port, () => {
   console.log(`qiko-to-slack notify API on http://localhost:${notifyConfig.port}`);
+  console.log(`  UI   http://localhost:${notifyConfig.port}/`);
   console.log(`  GET  /config  — view current bot_token & channel`);
   console.log(`  POST /config  { "bot_token": "xoxb-...", "channel": "general" }  — save config`);
   console.log(`  POST /notify  { "text": "Hello from Qiko", "channel": "general" }`);
