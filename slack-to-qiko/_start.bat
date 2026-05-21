@@ -2,15 +2,17 @@
 setlocal EnableExtensions
 cd /d "%~dp0"
 
-if not exist ".env" (
-    echo ERROR: .env not found. Copy .env.example to .env and fill in Slack + Qiko values.
+set "ENV_FILE=.env"
+if not exist ".env" if exist "..\.env" set "ENV_FILE=..\.env"
+if not exist "%ENV_FILE%" (
+    echo ERROR: .env not found. Copy .env.example to repo root or slack-to-qiko\.env
     pause
     exit /b 1
 )
 
 REM Read PORT from .env (default 3010)
 set "PORT=3010"
-for /f "usebackq eol=# tokens=1,* delims==" %%a in (".env") do (
+for /f "usebackq eol=# tokens=1,* delims==" %%a in ("%ENV_FILE%") do (
     if /i "%%a"=="PORT" (
         for /f "tokens=* delims= " %%p in ("%%b") do set "PORT=%%p"
     )
@@ -37,6 +39,7 @@ if not exist "node_modules\" (
 REM ngrok: project bin, Laragon, then PATH
 set "NGROK_EXE="
 if exist ".ngrok-bin\ngrok.exe" set "NGROK_EXE=%~dp0.ngrok-bin\ngrok.exe"
+if not defined NGROK_EXE if exist "..\.ngrok-bin\ngrok.exe" set "NGROK_EXE=%~dp0..\.ngrok-bin\ngrok.exe"
 if not defined NGROK_EXE if exist "C:\laragon\bin\ngrok\ngrok.exe" set "NGROK_EXE=C:\laragon\bin\ngrok\ngrok.exe"
 if not defined NGROK_EXE (
     for /f "delims=" %%g in ('where ngrok 2^>nul') do (
@@ -60,7 +63,7 @@ taskkill /IM ngrok.exe /F >nul 2>&1
 timeout /t 2 /nobreak >nul
 
 echo Starting Qiko Slack app on port %PORT%...
-start "qiko-slackapp" cmd /k "cd /d ""%~dp0"" && npm run dev"
+start "slack-to-qiko" cmd /k "cd /d ""%~dp0"" && npm run dev"
 
 echo Waiting for server (npm run check + start may take ~15s)...
 timeout /t 12 /nobreak >nul
@@ -83,7 +86,7 @@ echo.
 echo === Slack URL verification ===
 echo 1. Copy "Slack events" URL into Event Subscriptions - Request URL
 echo 2. SLACK_SIGNING_SECRET in .env MUST match Slack app - Basic Information - Signing Secret
-echo 3. Click Retry ONLY while qiko-slackapp + qiko-ngrok windows are running
+echo 3. Click Retry ONLY while slack-to-qiko + qiko-ngrok windows are running
 echo 4. If Verify still fails: use _start-cloudflared.bat instead of ngrok (free ngrok warning page)
 echo.
 echo Socket Mode OFF. Subscribe bot event: app_mention. Channel: /invite @LinkstarBot

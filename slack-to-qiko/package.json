@@ -1,0 +1,28 @@
+{
+  "name": "slack-to-qiko",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Slack bot (@LinkstarBot) — Slack mentions → Qiko worker API",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "start": "node dist/index.js",
+    "build": "tsc",
+    "check": "tsc --noEmit",
+    "predev": "npm run check",
+    "prestart": "npm run build",
+    "dev:ngrok": "powershell -ExecutionPolicy Bypass -File scripts/dev-ngrok.ps1"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@slack/bolt": "^4.4.0",
+    "dotenv": "^16.4.7"
+  },
+  "devDependencies": {
+    "@types/node": "^24.7.0",
+    "tsx": "^4.19.3",
+    "typescript": "^5.9.3"
+  }
+}

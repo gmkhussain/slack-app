@@ -1,28 +1,14 @@
 {
-  "name": "qiko-slackapp",
+  "name": "slack-app",
   "version": "1.0.0",
   "private": true,
-  "type": "module",
-  "description": "Slack bot (@LinkstarBot) that answers via Qiko worker public chat API",
+  "description": "Slack ↔ Qiko monorepo: slack-to-qiko (inbound) + qiko-to-slack (outbound)",
   "scripts": {
-    "dev": "tsx watch src/index.ts",
-    "start": "node dist/index.js",
-    "build": "tsc",
-    "check": "tsc --noEmit",
-    "predev": "npm run check",
-    "prestart": "npm run build",
-    "dev:ngrok": "powershell -ExecutionPolicy Bypass -File scripts/dev-ngrok.ps1"
-  },
-  "engines": {
-    "node": ">=20"
-  },
-  "dependencies": {
-    "@slack/bolt": "^4.4.0",
-    "dotenv": "^16.4.7"
-  },
-  "devDependencies": {
-    "@types/node": "^24.7.0",
-    "tsx": "^4.19.3",
-    "typescript": "^5.9.3"
+    "slack-to-qiko": "npm run start --prefix slack-to-qiko",
+    "slack-to-qiko:dev": "npm run dev --prefix slack-to-qiko",
+    "slack-to-qiko:check": "npm run check --prefix slack-to-qiko",
+    "qiko-to-slack": "npm run start --prefix qiko-to-slack",
+    "qiko-to-slack:dev": "npm run dev --prefix qiko-to-slack",
+    "qiko-to-slack:check": "npm run check --prefix qiko-to-slack"
   }
 }

@@ -5,6 +5,7 @@ import {
   parseCreateChannelRequest,
   parseDeleteChannelRequest,
   parseInviteUserRequest,
+  parseJoinBotChannelRequest,
   parseRenameChannelRequest,
 } from "./messageUtils.js";
 
@@ -25,7 +26,7 @@ function slackErrorData(error: unknown): {
 
 function slackApiErrorMessage(
   error: unknown,
-  context: "create" | "delete" | "find" | "rename" | "invite"
+  context: "create" | "delete" | "find" | "rename" | "invite" | "join"
 ): string {
   const { error: code, needed, provided } = slackErrorData(error);
 
@@ -39,17 +40,23 @@ function slackApiErrorMessage(
         ? "No active channel with that name was found."
         : "Channel not found.";
     case "not_in_channel":
-      return "The bot must be a member of that channel. Invite @LinkstarBot to `#channel` first, or use a channel the bot can access.";
+      return context === "join"
+        ? "Could not add the bot to that channel. For private channels, a member must run `/invite @LinkstarBot` in Slack."
+        : "The bot must be a member of that channel. Say `@LinkstarBot join channel NAME` or `/invite @LinkstarBot` in Slack.";
+    case "method_not_supported_for_channel_type":
+      return "Cannot auto-join this channel type. In Slack, run `/invite @LinkstarBot` inside that channel.";
     case "missing_scope": {
       const need =
         needed ??
         (context === "find"
           ? "channels:read"
-          : context === "delete" ||
-              context === "rename" ||
-              context === "invite"
-            ? "channels:manage"
-            : "channels:manage");
+          : context === "join"
+            ? "channels:join"
+            : context === "delete" ||
+                context === "rename" ||
+                context === "invite"
+              ? "channels:manage"
+              : "channels:manage");
       let msg = `Missing OAuth scope: \`${need}\`. Add it at api.slack.com → your app → OAuth & Permissions → Bot Token Scopes, then Reinstall to workspace and update SLACK_BOT_TOKEN in .env.`;
       if (provided) {
         msg += ` (token currently has: ${provided})`;
@@ -86,6 +93,9 @@ function slackApiErrorMessage(
       if (context === "invite") {
         return error instanceof Error ? error.message : "Could not invite user.";
       }
+      if (context === "join") {
+        return error instanceof Error ? error.message : "Could not add bot to channel.";
+      }
       return error instanceof Error ? error.message : "Could not create channel.";
   }
 }
@@ -119,6 +129,74 @@ export async function findChannelByName(
   } while (cursor);
 
   return null;
+}
+
+/** Add @LinkstarBot to a channel (public: join; private: invite bot user). */
+export async function joinBotToChannel(
+  client: WebClient,
+  channelName: string
+): Promise<{ id: string; name: string; isPrivate: boolean }> {
+  const found = await findChannelByName(client, channelName);
+  if (!found) {
+    throw new Error(`No active channel named "${channelName}" was found.`);
+  }
+
+  const auth = await client.auth.test();
+  const botUserId = auth.user_id;
+  if (!botUserId) {
+    throw new Error("Could not resolve bot user id (auth.test).");
+  }
+
+  try {
+    await client.conversations.join({ channel: found.id });
+    return found;
+  } catch (joinError) {
+    const joinCode = slackErrorData(joinError).error;
+    if (joinCode === "already_in_channel") return found;
+
+    try {
+      await client.conversations.invite({
+        channel: found.id,
+        users: botUserId,
+      });
+      return found;
+    } catch (inviteError) {
+      const inviteCode = slackErrorData(inviteError).error;
+      if (inviteCode === "already_in_channel") return found;
+      throw inviteError;
+    }
+  }
+}
+
+export async function tryJoinBotToChannelFromMessage(params: {
+  client: WebClient;
+  text: string;
+  replyChannel: string;
+  threadTs: string;
+}): Promise<boolean> {
+  const parsed = parseJoinBotChannelRequest(params.text);
+  if (!parsed) return false;
+
+  const { channelName } = parsed;
+
+  try {
+    const joined = await joinBotToChannel(params.client, channelName);
+    const link = `<#${joined.id}>`;
+    await params.client.chat.postMessage({
+      channel: params.replyChannel,
+      thread_ts: params.threadTs,
+      text: `Joined ${link} (\`#${joined.name}\`). You can post messages there now.`,
+    });
+  } catch (error) {
+    console.error("[slack] join channel error:", error);
+    await params.client.chat.postMessage({
+      channel: params.replyChannel,
+      thread_ts: params.threadTs,
+      text: `Could not join channel \`${channelName}\`: ${slackApiErrorMessage(error, "join")}`,
+    });
+  }
+
+  return true;
 }
 
 async function resolveSlackUserId(

@@ -7,6 +7,7 @@ import {
   tryCreateChannelFromMessage,
   tryDeleteChannelFromMessage,
   tryInviteUserFromMessage,
+  tryJoinBotToChannelFromMessage,
   tryRenameChannelFromMessage,
 } from "./channelActions.js";
 import { tryInviteToWorkspaceFromMessage } from "./workspaceActions.js";
@@ -157,7 +158,7 @@ async function onMentionMessage(params: {
     const greeting =
       "Hi! Ask me anything — for example: `tell 2 + 2?`\n" +
       "Channels: `create channel with name of 'my-team'` | `delete channel xyz` | `rename channel xyz to new-name`\n" +
-      "Invite: `invite user @name to channel my-team` | `invite people to workspace email@company.com`";
+      "Invite: `invite user @name to channel my-team` | `join channel general` (add bot to channel)";
     if (say) {
       await say({ thread_ts: threadTs, text: greeting });
     } else {
@@ -165,6 +166,14 @@ async function onMentionMessage(params: {
     }
     return;
   }
+
+  const joinedChannel = await tryJoinBotToChannelFromMessage({
+    client,
+    text: question,
+    replyChannel: channel,
+    threadTs,
+  });
+  if (joinedChannel) return;
 
   const invitedToWorkspace = await tryInviteToWorkspaceFromMessage({
     client,

@@ -131,6 +131,34 @@ export function parseRenameChannelRequest(
   return { fromName, toName };
 }
 
+export interface JoinBotChannelRequest {
+  channelName: string;
+}
+
+/**
+ * Matches: "join channel general", "add bot to channel my-team", "invite bot to channel xyz"
+ */
+export function parseJoinBotChannelRequest(
+  text: string
+): JoinBotChannelRequest | null {
+  const normalized = text.trim();
+  const patterns = [
+    /^join\s+(?:bot\s+)?(?:channel\s+)?(.+)$/i,
+    /^add\s+bot\s+to\s+channel\s+(.+)$/i,
+    /^invite\s+bot\s+to\s+channel\s+(.+)$/i,
+  ];
+
+  for (const pattern of patterns) {
+    const match = normalized.match(pattern);
+    if (!match) continue;
+    const channelName = sanitizeSlackChannelName(match[1] ?? "");
+    if (!channelName) return null;
+    return { channelName };
+  }
+
+  return null;
+}
+
 export interface InviteUserRequest {
   userRef: string;
   channelName: string;

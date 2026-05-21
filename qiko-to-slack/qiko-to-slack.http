@@ -1,0 +1,55 @@
+@baseUrl = http://localhost:3011
+@channel = general
+
+### Health check
+GET {{baseUrl}}/health
+
+
+### Send a simple message
+POST {{baseUrl}}/notify
+Content-Type: application/json
+
+{
+  "text": "Hello from Qiko!",
+  "channel": "{{channel}}"
+}
+
+
+### Reply in a thread
+POST {{baseUrl}}/notify
+Content-Type: application/json
+
+{
+  "text": "Reply in thread",
+  "channel": "{{channel}}",
+  "thread_ts": "1234567890.123456"
+}
+
+
+### Send to default channel (no channel specified)
+POST {{baseUrl}}/notify
+Content-Type: application/json
+
+{
+  "text": "Message to default channel"
+}
+
+
+### Send with secret (if QIKO_SLACK_NOTIFY_SECRET is set)
+POST {{baseUrl}}/notify
+Content-Type: application/json
+X-Notify-Secret: your-secret-here
+
+{
+  "text": "Authenticated message",
+  "channel": "{{channel}}"
+}
+
+
+### Add bot to a channel
+POST {{baseUrl}}/join
+Content-Type: application/json
+
+{
+  "channel": "{{channel}}"
+}

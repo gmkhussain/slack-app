@@ -1,0 +1,26 @@
+{
+  "name": "qiko-to-slack",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Post messages from Qiko to Slack channels",
+  "main": "src/index.ts",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "start": "tsx src/server.ts",
+    "send": "tsx src/cli.ts",
+    "check": "tsc --noEmit"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@slack/web-api": "^7.9.0",
+    "dotenv": "^16.4.7"
+  },
+  "devDependencies": {
+    "@types/node": "^24.7.0",
+    "tsx": "^4.19.3",
+    "typescript": "^5.9.3"
+  }
+}

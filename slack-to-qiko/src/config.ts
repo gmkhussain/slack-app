@@ -1,4 +1,15 @@
-import "dotenv/config";
+import { config as loadEnv } from "dotenv";
+import { existsSync } from "node:fs";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+
+const here = dirname(fileURLToPath(import.meta.url));
+const repoEnv = resolve(here, "../../.env");
+const localEnv = resolve(here, "../.env");
+
+if (existsSync(repoEnv)) loadEnv({ path: repoEnv });
+else if (existsSync(localEnv)) loadEnv({ path: localEnv });
+else loadEnv();
 
 function requireEnv(name: string): string {
   const value = process.env[name]?.trim();
