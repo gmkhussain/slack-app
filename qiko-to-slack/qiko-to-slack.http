@@ -1,11 +1,56 @@
 @baseUrl = http://localhost:3011
-@channel = general
+@channel = C0B4P79HLE9
 
-### Health check
-GET {{baseUrl}}/health
+@token = xoxb----hidden---
+
+@thread_ts = 1779357592.930739
+
+### ── CONFIG ──────────────────────────────────────────────
+
+### Get current config (shows active bot_token hint & channel)
+GET {{baseUrl}}/config
 
 
-### Send a simple message
+### Save bot_token + channel (persisted to runtime-config.json)
+POST {{baseUrl}}/config
+Content-Type: application/json
+
+{
+  "bot_token": "{{token}}",
+  "channel": "{{channel}}"
+}
+
+
+### Update channel only (keep existing token)
+POST {{baseUrl}}/config
+Content-Type: application/json
+
+{
+  "channel": "{{channel}}"
+}
+
+
+### Update token only (keep existing channel)
+POST {{baseUrl}}/config
+Content-Type: application/json
+
+{
+  "bot_token": "{{token}}"
+}
+
+
+### ── NOTIFY ───────────────────────────────────────────────
+
+### Send a simple message (uses saved/env channel)
+POST {{baseUrl}}/notify
+Content-Type: application/json
+
+{
+  "text": "Hello from {{channel}}!"
+}
+
+
+### Send to a specific channel
 POST {{baseUrl}}/notify
 Content-Type: application/json
 
@@ -22,16 +67,7 @@ Content-Type: application/json
 {
   "text": "Reply in thread",
   "channel": "{{channel}}",
-  "thread_ts": "1234567890.123456"
-}
-
-
-### Send to default channel (no channel specified)
-POST {{baseUrl}}/notify
-Content-Type: application/json
-
-{
-  "text": "Message to default channel"
+  "thread_ts": "{{thread_ts}}"
 }
 
 
@@ -46,6 +82,8 @@ X-Notify-Secret: your-secret-here
 }
 
 
+### ── JOIN ────────────────────────────────────────────────
+
 ### Add bot to a channel
 POST {{baseUrl}}/join
 Content-Type: application/json
@@ -53,3 +91,9 @@ Content-Type: application/json
 {
   "channel": "{{channel}}"
 }
+
+
+### ── HEALTH ──────────────────────────────────────────────
+
+### Health check
+GET {{baseUrl}}/health

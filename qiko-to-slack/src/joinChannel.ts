@@ -20,17 +20,29 @@ export async function ensureBotInChannel(channelId: string): Promise<void> {
     await slack.conversations.join({ channel: channelId });
     return;
   } catch (joinError) {
-    if (slackErrorCode(joinError) === "already_in_channel") return;
+    const joinErrCode = slackErrorCode(joinError);
+    if (joinErrCode === "already_in_channel") return;
 
-    try {
-      await slack.conversations.invite({
-        channel: channelId,
-        users: botUserId,
-      });
-    } catch (inviteError) {
-      if (slackErrorCode(inviteError) === "already_in_channel") return;
-      throw inviteError;
+    // Private channel — conversations.join not allowed; try invite
+    if (joinErrCode === "method_not_supported_for_channel_type" || joinErrCode === "is_private") {
+      try {
+        await slack.conversations.invite({
+          channel: channelId,
+          users: botUserId,
+        });
+        return;
+      } catch (inviteError) {
+        const inviteErrCode = slackErrorCode(inviteError);
+        if (inviteErrCode === "already_in_channel" || inviteErrCode === "cant_invite_self") return;
+        throw inviteError;
+      }
     }
+
+    // For any other join error, surface it clearly
+    throw new Error(
+      `Bot could not join channel ${channelId} (${joinErrCode ?? String(joinError)}). ` +
+        `For private channels, manually run: /invite @LinkstarBot inside the channel.`
+    );
   }
 }
 

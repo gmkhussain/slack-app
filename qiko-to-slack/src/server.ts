@@ -3,6 +3,7 @@ import { notifyConfig } from "./config.js";
 import { readJsonBody } from "./readJsonBody.js";
 import { joinBotToChannelByName } from "./joinChannel.js";
 import { sendSlackMessage } from "./slackNotifier.js";
+import { setRuntimeConfig, getRuntimeConfigSafe, getRuntimeChannel } from "./runtimeConfig.js";
 
 function json(res: ServerResponse, status: number, body: unknown): void {
   res.writeHead(status, { "Content-Type": "application/json; charset=utf-8" });
@@ -38,7 +39,7 @@ async function handleJoin(
     return;
   }
 
-  const channel = body.channel?.trim() || notifyConfig.defaultChannel;
+  const channel = body.channel?.trim() || getRuntimeChannel();
   try {
     const result = await joinBotToChannelByName(channel);
     json(res, 200, {
@@ -95,11 +96,59 @@ async function handleNotify(
   }
 }
 
+async function handleGetConfig(
+  _req: IncomingMessage,
+  res: ServerResponse
+): Promise<void> {
+  json(res, 200, { ok: true, config: getRuntimeConfigSafe() });
+}
+
+async function handleSetConfig(
+  req: IncomingMessage,
+  res: ServerResponse
+): Promise<void> {
+  let body: { bot_token?: string; channel?: string; secret?: string };
+  try {
+    body = (await readJsonBody(req)) as typeof body;
+  } catch {
+    json(res, 400, { ok: false, error: "invalid_json" });
+    return;
+  }
+
+  if (!checkSecret(req, body)) {
+    unauthorized(res);
+    return;
+  }
+
+  if (!body.bot_token && !body.channel) {
+    json(res, 400, { ok: false, error: "Provide at least one of: bot_token, channel" });
+    return;
+  }
+
+  try {
+    setRuntimeConfig({ botToken: body.bot_token, channel: body.channel });
+    json(res, 200, { ok: true, config: getRuntimeConfigSafe() });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "config_error";
+    json(res, 400, { ok: false, error: message });
+  }
+}
+
 const server = createServer(async (req, res) => {
   const url = req.url?.split("?")[0] ?? "/";
 
   if (req.method === "GET" && (url === "/" || url === "/health")) {
     json(res, 200, { ok: true, service: "qiko-to-slack" });
+    return;
+  }
+
+  if (req.method === "GET" && url === "/config") {
+    await handleGetConfig(req, res);
+    return;
+  }
+
+  if (req.method === "POST" && url === "/config") {
+    await handleSetConfig(req, res);
     return;
   }
 
@@ -118,9 +167,12 @@ const server = createServer(async (req, res) => {
 
 server.listen(notifyConfig.port, () => {
   console.log(`qiko-to-slack notify API on http://localhost:${notifyConfig.port}`);
+  console.log(`  GET  /config  — view current bot_token & channel`);
+  console.log(`  POST /config  { "bot_token": "xoxb-...", "channel": "general" }  — save config`);
   console.log(`  POST /notify  { "text": "Hello from Qiko", "channel": "general" }`);
   console.log(`  POST /join    { "channel": "general" }  (add bot to channel)`);
-  console.log(`  Default channel: ${notifyConfig.defaultChannel}`);
+  const cfg = getRuntimeConfigSafe();
+  console.log(`  Active channel: ${cfg.channel}  [source: ${cfg.source}]`);
   if (notifyConfig.notifySecret) {
     console.log("  Auth: header X-Notify-Secret or body.secret");
   }

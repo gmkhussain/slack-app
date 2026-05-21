@@ -1,11 +1,22 @@
 import { WebClient } from "@slack/web-api";
-import { notifyConfig } from "./config.js";
+import { getRuntimeBotToken } from "./runtimeConfig.js";
 
 let client: WebClient | null = null;
+let clientToken: string | null = null;
 
 export function getSlackClient(): WebClient {
-  if (!client) client = new WebClient(notifyConfig.botToken);
+  const token = getRuntimeBotToken();
+  // Reset client if token has changed
+  if (!client || clientToken !== token) {
+    client = new WebClient(token);
+    clientToken = token;
+  }
   return client;
+}
+
+export function resetSlackClient(): void {
+  client = null;
+  clientToken = null;
 }
 
 export function sanitizeChannelName(name: string): string {
