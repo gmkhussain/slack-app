@@ -91,6 +91,28 @@ async function resolveUserId(userRef: string): Promise<string> {
   );
 }
 
+/** @username in message body → `<@U…>` so Slack renders a clickable mention */
+async function expandUserMentions(text: string): Promise<string> {
+  const mentionRe = /(?<![\w.])@([a-zA-Z0-9][\w.-]*)/g;
+  const handles = new Set<string>();
+  for (const m of text.matchAll(mentionRe)) {
+    handles.add(m[1]);
+  }
+  if (handles.size === 0) return text;
+
+  let out = text;
+  for (const handle of handles) {
+    try {
+      const userId = await resolveUserId(handle);
+      const escaped = handle.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      out = out.replace(new RegExp(`(?<![\\w.])@${escaped}\\b`, "gi"), `<@${userId}>`);
+    } catch {
+      // keep plain @handle if lookup fails
+    }
+  }
+  return out;
+}
+
 /**
  * Send a direct message (DM) to a Slack user by User ID or email.
  * Requires im:write scope.
@@ -105,9 +127,11 @@ export async function sendDirectMessage(
   const dmChannelId = openResult.channel?.id;
   if (!dmChannelId) throw new Error(`Could not open DM channel with user "${userId}".`);
 
+  const text = await expandUserMentions(options.text);
+
   const result = await getSlackClient().chat.postMessage({
     channel: dmChannelId,
-    text: options.text,
+    text,
   });
 
   if (!result.ok || !result.ts) {
@@ -150,9 +174,11 @@ export async function sendSlackMessage(
     await ensureBotInChannel(channelId);
   }
 
+  const text = await expandUserMentions(options.text);
+
   let result = await getSlackClient().chat.postMessage({
     channel: channelId,
-    text: options.text,
+    text,
     ...(options.threadTs ? { thread_ts: options.threadTs } : {}),
   });
 
@@ -160,7 +186,7 @@ export async function sendSlackMessage(
     await ensureBotInChannel(channelId);
     result = await getSlackClient().chat.postMessage({
       channel: channelId,
-      text: options.text,
+      text,
       ...(options.threadTs ? { thread_ts: options.threadTs } : {}),
     });
   }
