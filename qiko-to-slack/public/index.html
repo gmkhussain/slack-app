@@ -11,24 +11,23 @@
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --bg:         #0f1117;
-      --surface:    #181b23;
-      --surface-2:  #1f2330;
-      --border:     #272c3d;
-      --border-2:   #313749;
-      --primary:    #1560bd;
-      --primary-h:  #1a72d9;
-      --primary-l:  #4a93eb;
-      --primary-dim:#1560bd22;
-      --success:    #22c55e;
-      --error:      #ef4444;
-      --warning:    #f59e0b;
-      --text:       #e4e8f5;
-      --text-2:     #8b92a9;
-      --text-3:     #555c75;
-      --radius:     10px;
-      --radius-sm:  6px;
-      --shadow:     0 4px 24px rgba(0,0,0,.45);
+      --bg: #0f1117;
+      --surface: #181b23;
+      --surface-2: #1f2330;
+      --border: #272c3d;
+      --primary: #1560bd;
+      --primary-h: #1a72d9;
+      --primary-l: #4a93eb;
+      --primary-dim: #1560bd33;
+      --success: #22c55e;
+      --error: #ef4444;
+      --text: #e4e8f5;
+      --text-2: #8b92a9;
+      --text-3: #555c75;
+      --user-bg: #1e3a5f;
+      --bot-bg: #1f2330;
+      --radius: 12px;
+      --radius-sm: 8px;
     }
 
     html, body {
@@ -40,41 +39,53 @@
       line-height: 1.5;
     }
 
-    /* ── Layout ─────────────────────────────── */
     .app {
       display: grid;
-      grid-template-rows: 56px 1fr;
+      grid-template-rows: 52px 1fr;
       height: 100vh;
       overflow: hidden;
     }
 
-    /* ── Header ─────────────────────────────── */
     header {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 0 24px;
+      padding: 0 20px;
       background: var(--surface);
       border-bottom: 1px solid var(--border);
       gap: 12px;
+      flex-shrink: 0;
     }
+
     .logo {
       display: flex;
       align-items: center;
       gap: 10px;
       font-weight: 700;
       font-size: 15px;
-      letter-spacing: -0.3px;
     }
+
     .logo-icon {
-      width: 28px; height: 28px;
+      width: 28px;
+      height: 28px;
       background: var(--primary);
       border-radius: 7px;
-      display: flex; align-items: center; justify-content: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       font-size: 14px;
     }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
     .status-badge {
-      display: flex; align-items: center; gap: 6px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
       padding: 4px 10px;
       border-radius: 20px;
       font-size: 12px;
@@ -82,49 +93,320 @@
       background: var(--surface-2);
       border: 1px solid var(--border);
       color: var(--text-2);
-      transition: all .3s;
     }
-    .status-badge.connected { color: var(--success); border-color: #22c55e33; background: #22c55e0f; }
+
+    .status-badge.connected {
+      color: var(--success);
+      border-color: #22c55e33;
+      background: #22c55e0f;
+    }
+
     .status-badge .dot {
-      width: 6px; height: 6px;
+      width: 6px;
+      height: 6px;
       border-radius: 50%;
       background: var(--text-3);
-      transition: background .3s;
     }
-    .status-badge.connected .dot { background: var(--success); box-shadow: 0 0 6px var(--success); }
 
-    /* ── Main grid ───────────────────────────── */
-    main {
+    .status-badge.connected .dot {
+      background: var(--success);
+      box-shadow: 0 0 6px var(--success);
+    }
+
+    .icon-btn {
+      width: 34px;
+      height: 34px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background: var(--surface-2);
+      color: var(--text-2);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: color .15s, border-color .15s;
+    }
+
+    .icon-btn:hover {
+      color: var(--text);
+      border-color: var(--primary-l);
+    }
+
+    .chat-layout {
       display: grid;
-      grid-template-columns: 300px 1fr;
+      grid-template-columns: 1fr;
       overflow: hidden;
+      position: relative;
     }
 
-    /* ── Sidebar (Config) ────────────────────── */
-    aside {
-      background: var(--surface);
-      border-right: 1px solid var(--border);
+    .chat-main {
       display: flex;
       flex-direction: column;
-      overflow-y: auto;
-      padding: 20px 16px;
-      gap: 20px;
+      min-width: 0;
+      height: 100%;
     }
+
+    .messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .welcome {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--text-2);
+      max-width: 520px;
+      margin: auto;
+    }
+
+    .welcome h2 {
+      font-size: 18px;
+      color: var(--text);
+      margin-bottom: 8px;
+      font-weight: 600;
+    }
+
+    .welcome p {
+      font-size: 13px;
+      margin-bottom: 20px;
+      line-height: 1.6;
+    }
+
+    .examples {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      text-align: left;
+    }
+
+    .example-chip {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 10px 14px;
+      font-size: 13px;
+      color: var(--text-2);
+      cursor: pointer;
+      transition: border-color .15s, background .15s;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .example-chip:hover {
+      border-color: var(--primary-l);
+      background: var(--surface-2);
+      color: var(--text);
+    }
+
+    .msg {
+      display: flex;
+      flex-direction: column;
+      max-width: 85%;
+      animation: fadeIn .2s ease;
+    }
+
+    .msg.user { align-self: flex-end; align-items: flex-end; }
+    .msg.bot { align-self: flex-start; align-items: flex-start; }
+
+    .msg-bubble {
+      padding: 10px 14px;
+      border-radius: var(--radius);
+      font-size: 14px;
+      line-height: 1.5;
+      word-break: break-word;
+    }
+
+    .msg.user .msg-bubble {
+      background: var(--user-bg);
+      border: 1px solid #2563eb44;
+      border-bottom-right-radius: 4px;
+    }
+
+    .msg.bot .msg-bubble {
+      background: var(--bot-bg);
+      border: 1px solid var(--border);
+      border-bottom-left-radius: 4px;
+    }
+
+    .msg.bot.error .msg-bubble {
+      border-color: #ef444444;
+      background: #ef44440f;
+    }
+
+    .msg.bot.success .msg-bubble {
+      border-color: #22c55e44;
+    }
+
+    .msg-meta {
+      font-size: 11px;
+      color: var(--text-3);
+      margin-top: 4px;
+      padding: 0 4px;
+    }
+
+    .msg-detail {
+      margin-top: 8px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: var(--text-3);
+      background: #00000033;
+      padding: 8px 10px;
+      border-radius: var(--radius-sm);
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+
+    .composer {
+      padding: 16px 20px 20px;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    .composer-inner {
+      display: flex;
+      gap: 10px;
+      align-items: flex-end;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    .composer-input-wrap {
+      flex: 1;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 4px;
+      transition: border-color .2s, box-shadow .2s;
+    }
+
+    .composer-input-wrap:focus-within {
+      border-color: var(--primary-l);
+      box-shadow: 0 0 0 3px var(--primary-dim);
+    }
+
+    #chat-input {
+      width: 100%;
+      border: none;
+      background: transparent;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 14px;
+      padding: 10px 12px;
+      resize: none;
+      outline: none;
+      min-height: 44px;
+      max-height: 120px;
+      line-height: 1.45;
+    }
+
+    .send-btn {
+      width: 44px;
+      height: 44px;
+      border-radius: var(--radius-sm);
+      border: none;
+      background: var(--primary);
+      color: #fff;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: background .15s, transform .1s;
+    }
+
+    .send-btn:hover:not(:disabled) {
+      background: var(--primary-h);
+    }
+
+    .send-btn:disabled {
+      opacity: .45;
+      cursor: not-allowed;
+    }
+
+    .send-btn.loading svg { opacity: 0; }
+    .send-btn.loading::after {
+      content: '';
+      position: absolute;
+      width: 18px;
+      height: 18px;
+      border: 2px solid rgba(255,255,255,.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin .6s linear infinite;
+    }
+
+    .send-btn { position: relative; }
+
+    .composer-hint {
+      text-align: center;
+      font-size: 11px;
+      color: var(--text-3);
+      margin-top: 8px;
+    }
+
+    /* Settings drawer */
+    .drawer-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.5);
+      z-index: 40;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .25s;
+    }
+
+    .drawer-overlay.open {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    .drawer {
+      position: fixed;
+      top: 0;
+      right: 0;
+      width: min(320px, 90vw);
+      height: 100%;
+      background: var(--surface);
+      border-left: 1px solid var(--border);
+      z-index: 50;
+      transform: translateX(100%);
+      transition: transform .25s ease;
+      display: flex;
+      flex-direction: column;
+      padding: 20px 16px;
+      gap: 16px;
+      overflow-y: auto;
+    }
+
+    .drawer.open { transform: translateX(0); }
+
+    .drawer-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-weight: 600;
+      font-size: 15px;
+    }
+
     .section-label {
       font-size: 10.5px;
       font-weight: 600;
       letter-spacing: .08em;
       text-transform: uppercase;
       color: var(--text-3);
-      margin-bottom: 10px;
+      margin-bottom: 8px;
     }
 
-    /* ── Form controls ───────────────────────── */
-    .field { display: flex; flex-direction: column; gap: 5px; }
+    .field { display: flex; flex-direction: column; gap: 5px; margin-bottom: 12px; }
     label { font-size: 12px; font-weight: 500; color: var(--text-2); }
 
     .input-wrap { position: relative; }
-    input, textarea, select {
+
+    input, textarea {
       width: 100%;
       background: var(--surface-2);
       border: 1px solid var(--border);
@@ -134,418 +416,275 @@
       font-size: 13px;
       padding: 8px 10px;
       outline: none;
-      transition: border-color .2s, box-shadow .2s;
     }
-    input:focus, textarea:focus, select:focus {
-      border-color: var(--primary-l);
-      box-shadow: 0 0 0 3px var(--primary-dim);
-    }
-    input.token-input { padding-right: 36px; font-family: 'JetBrains Mono', monospace; font-size: 11.5px; }
-    .eye-btn {
-      position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
-      background: none; border: none; cursor: pointer; color: var(--text-3);
-      padding: 2px; line-height: 1; transition: color .2s;
-    }
-    .eye-btn:hover { color: var(--text-2); }
 
-    textarea { resize: vertical; min-height: 80px; }
+    input:focus, textarea:focus {
+      border-color: var(--primary-l);
+    }
+
+    input.token-input {
+      padding-right: 36px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11.5px;
+    }
+
+    .eye-btn {
+      position: absolute;
+      right: 8px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--text-3);
+    }
+
+    .hint { font-size: 11px; color: var(--text-3); margin-top: 2px; }
 
     .btn {
-      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
       padding: 8px 14px;
       border-radius: var(--radius-sm);
-      font-family: inherit; font-size: 13px; font-weight: 600;
-      cursor: pointer; border: none; transition: all .15s;
-      white-space: nowrap;
-    }
-    .btn-primary {
-      background: var(--primary); color: #fff;
-    }
-    .btn-primary:hover { background: var(--primary-h); transform: translateY(-1px); box-shadow: 0 4px 12px #1560bd44; }
-    .btn-primary:active { transform: translateY(0); box-shadow: none; }
-    .btn-ghost {
-      background: var(--surface-2); color: var(--text-2);
-      border: 1px solid var(--border);
-    }
-    .btn-ghost:hover { border-color: var(--border-2); color: var(--text); }
-    .btn-full { width: 100%; }
-    .btn:disabled { opacity: .5; cursor: not-allowed; transform: none !important; box-shadow: none !important; }
-    .btn-loading::after {
-      content: '';
-      width: 12px; height: 12px;
-      border: 2px solid rgba(255,255,255,.3);
-      border-top-color: #fff;
-      border-radius: 50%;
-      animation: spin .6s linear infinite;
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      width: 100%;
     }
 
-    /* ── Config saved info ───────────────────── */
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-primary:hover { background: var(--primary-h); }
+    .btn-ghost {
+      background: var(--surface-2);
+      color: var(--text-2);
+      border: 1px solid var(--border);
+      margin-top: 4px;
+    }
+
     .config-info {
       background: var(--surface-2);
       border: 1px solid var(--border);
       border-radius: var(--radius-sm);
       padding: 10px 12px;
+      font-size: 11px;
       display: none;
-      gap: 6px;
       flex-direction: column;
+      gap: 4px;
     }
+
     .config-info.visible { display: flex; }
-    .config-row { display: flex; align-items: center; justify-content: space-between; }
-    .config-key { font-size: 11px; color: var(--text-3); font-weight: 500; }
-    .config-val { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--primary-l); max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-    /* ── Content area ────────────────────────── */
-    .content {
+    #toast-container {
+      position: fixed;
+      bottom: 100px;
+      right: 20px;
+      z-index: 100;
       display: flex;
       flex-direction: column;
-      overflow: hidden;
+      gap: 8px;
     }
 
-    /* ── Tabs ────────────────────────────────── */
-    .tabs {
-      display: flex;
-      gap: 2px;
-      padding: 12px 20px 0;
-      border-bottom: 1px solid var(--border);
-      background: var(--surface);
-    }
-    .tab {
-      display: flex; align-items: center; gap: 6px;
-      padding: 8px 14px 10px;
-      font-size: 13px; font-weight: 500;
-      color: var(--text-2);
-      cursor: pointer; border: none; background: none;
-      border-bottom: 2px solid transparent;
-      margin-bottom: -1px;
-      transition: color .2s, border-color .2s;
-      border-radius: var(--radius-sm) var(--radius-sm) 0 0;
-    }
-    .tab:hover { color: var(--text); }
-    .tab.active { color: var(--primary-l); border-bottom-color: var(--primary-l); }
-    .tab-icon { font-size: 15px; }
-
-    /* ── Tab panels ──────────────────────────── */
-    .panels { flex: 1; overflow-y: auto; padding: 24px 24px 20px; }
-    .panel { display: none; animation: fadeIn .2s ease; }
-    .panel.active { display: block; }
-
-    .panel-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: start; }
-
-    .card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 20px;
-    }
-    .card-title {
-      font-size: 13px; font-weight: 600; margin-bottom: 16px;
-      display: flex; align-items: center; gap: 8px;
-    }
-    .card-title-icon { font-size: 16px; }
-
-    .form-fields { display: flex; flex-direction: column; gap: 14px; }
-
-    .hint { font-size: 11px; color: var(--text-3); margin-top: 2px; }
-
-    /* ── Response panel ──────────────────────── */
-    .response-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      overflow: hidden;
-      margin-top: 20px;
-    }
-    .response-header {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 10px 16px;
-      border-bottom: 1px solid var(--border);
-      background: var(--surface-2);
-    }
-    .response-title { font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--text-3); }
-    .response-meta { display: flex; align-items: center; gap: 8px; }
-    .response-status {
-      font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 4px;
-    }
-    .response-status.ok { background: #22c55e1a; color: var(--success); }
-    .response-status.err { background: #ef44441a; color: var(--error); }
-    .response-time { font-size: 11px; color: var(--text-3); font-family: 'JetBrains Mono', monospace; }
-    .response-body {
-      padding: 16px;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 12px;
-      line-height: 1.7;
-      color: var(--text-2);
-      min-height: 60px;
-      white-space: pre-wrap;
-      word-break: break-all;
-    }
-    .json-key   { color: #a5b4fc; }
-    .json-str   { color: #86efac; }
-    .json-num   { color: #fca5a5; }
-    .json-bool  { color: #fdba74; }
-    .json-null  { color: var(--text-3); }
-
-    /* ── Toast ───────────────────────────────── */
-    #toast-container {
-      position: fixed; bottom: 24px; right: 24px;
-      display: flex; flex-direction: column; gap: 8px;
-      z-index: 1000; pointer-events: none;
-    }
     .toast {
-      display: flex; align-items: center; gap: 10px;
-      padding: 10px 16px;
+      padding: 10px 14px;
       background: var(--surface-2);
       border: 1px solid var(--border);
       border-radius: var(--radius-sm);
-      box-shadow: var(--shadow);
       font-size: 13px;
+      box-shadow: 0 4px 20px rgba(0,0,0,.4);
       animation: slideUp .25s ease;
-      pointer-events: all;
-      max-width: 320px;
     }
+
     .toast.success { border-left: 3px solid var(--success); }
-    .toast.error   { border-left: 3px solid var(--error); }
-    .toast.info    { border-left: 3px solid var(--primary-l); }
-    .toast-icon { font-size: 16px; flex-shrink: 0; }
-    .toast-msg { color: var(--text); font-size: 13px; line-height: 1.4; }
-    .toast.fade-out { animation: fadeOut .3s ease forwards; }
+    .toast.error { border-left: 3px solid var(--error); }
 
-    /* ── Animations ──────────────────────────── */
-    @keyframes spin    { to { transform: rotate(360deg); } }
-    @keyframes fadeIn  { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
-    @keyframes slideUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
-    @keyframes fadeOut { to { opacity: 0; transform: translateY(6px); } }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+    @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
 
-    /* ── Scrollbar ───────────────────────────── */
     ::-webkit-scrollbar { width: 6px; }
-    ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 3px; }
-
-    /* ── Responsive ──────────────────────────── */
-    @media (max-width: 900px) {
-      main { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
-      aside { border-right: none; border-bottom: 1px solid var(--border); }
-      .panel-grid { grid-template-columns: 1fr; }
-    }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
   </style>
 </head>
 <body>
 <div class="app">
-
-  <!-- Header -->
   <header>
     <div class="logo">
       <div class="logo-icon">⚡</div>
       Qiko → Slack
     </div>
-    <div id="status-badge" class="status-badge">
-      <span class="dot"></span>
-      <span id="status-text">Not configured</span>
+    <div class="header-right">
+      <div id="status-badge" class="status-badge">
+        <span class="dot"></span>
+        <span id="status-text">Not configured</span>
+      </div>
+      <button class="icon-btn" onclick="toggleDrawer()" title="Settings" aria-label="Settings">⚙️</button>
     </div>
   </header>
 
-  <main>
-    <!-- Sidebar: Config -->
-    <aside>
-      <div>
-        <div class="section-label">Configuration</div>
-
-        <div class="form-fields">
-          <div class="field">
-            <label for="cfg-token">Bot Token</label>
-            <div class="input-wrap">
-              <input id="cfg-token" type="password" class="token-input" placeholder="xoxb-..." autocomplete="off" />
-              <button class="eye-btn" onclick="toggleToken()" title="Show/hide token" aria-label="Toggle token visibility">
-                <svg id="eye-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
-                </svg>
-              </button>
-            </div>
+  <div class="chat-layout">
+    <div class="chat-main">
+      <div id="messages" class="messages">
+        <div class="welcome" id="welcome">
+          <h2>Slack pe message bhejo</h2>
+          <p>Neeche likho — channel ya DM khud pick hoga.</p>
+          <div class="examples">
+            <button type="button" class="example-chip" onclick="useExample(this)">send message to #a1</button>
+            <button type="button" class="example-chip" onclick="useExample(this)">send message to @hussain</button>
           </div>
+        </div>
+      </div>
 
-          <div class="field">
-            <label for="cfg-channel">Default Channel</label>
-            <input id="cfg-channel" type="text" placeholder="general or C0XXXXXXX" />
-            <span class="hint">Name or Channel ID (C…)</span>
+      <div class="composer">
+        <div class="composer-inner">
+          <div class="composer-input-wrap">
+            <textarea id="chat-input" rows="1" placeholder="e.g. hello send message to #a1  ·  send message to @hussain" autocomplete="off"></textarea>
           </div>
-
-          <button class="btn btn-primary btn-full" id="save-btn" onclick="saveConfig()">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-            Save Config
+          <button type="button" class="send-btn" id="send-btn" onclick="handleSend()" title="Send (Enter)">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+            </svg>
           </button>
         </div>
+        <p class="composer-hint">Enter to send · Shift+Enter new line · send message to #channel · send message to @user</p>
       </div>
-
-      <div id="config-info" class="config-info">
-        <div class="section-label" style="margin-bottom:4px">Saved Config</div>
-        <div class="config-row">
-          <span class="config-key">TOKEN</span>
-          <span class="config-val" id="info-token">—</span>
-        </div>
-        <div class="config-row">
-          <span class="config-key">CHANNEL</span>
-          <span class="config-val" id="info-channel">—</span>
-        </div>
-        <div class="config-row">
-          <span class="config-key">SOURCE</span>
-          <span class="config-val" id="info-source">—</span>
-        </div>
-      </div>
-
-      <!-- Fetch current server config -->
-      <button class="btn btn-ghost btn-full" id="fetch-config-btn" onclick="fetchConfig()" style="margin-top:auto;">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>
-        Fetch from Server
-      </button>
-    </aside>
-
-    <!-- Content -->
-    <div class="content">
-
-      <!-- Tabs -->
-      <div class="tabs">
-        <button class="tab active" data-tab="notify" onclick="switchTab('notify')">
-          <span class="tab-icon">💬</span> Send Message
-        </button>
-        <button class="tab" data-tab="dm" onclick="switchTab('dm')">
-          <span class="tab-icon">✉️</span> Direct Message
-        </button>
-        <button class="tab" data-tab="join" onclick="switchTab('join')">
-          <span class="tab-icon">🔗</span> Join Channel
-        </button>
-      </div>
-
-      <div class="panels">
-
-        <!-- ── Notify Panel ── -->
-        <div id="panel-notify" class="panel active">
-          <div class="panel-grid">
-            <div class="card">
-              <div class="card-title"><span class="card-title-icon">💬</span> Send to Channel</div>
-              <div class="form-fields">
-                <div class="field">
-                  <label for="n-channel">Channel <span style="color:var(--text-3)">(override)</span></label>
-                  <input id="n-channel" type="text" placeholder="Leave blank to use config channel" />
-                </div>
-                <div class="field">
-                  <label for="n-text">Message *</label>
-                  <textarea id="n-text" placeholder="Type your message here…" rows="4"></textarea>
-                </div>
-                <div class="field">
-                  <label for="n-thread">Thread TS <span style="color:var(--text-3)">(optional)</span></label>
-                  <input id="n-thread" type="text" placeholder="1234567890.123456" />
-                  <span class="hint">Reply in an existing thread</span>
-                </div>
-                <button class="btn btn-primary btn-full" id="notify-btn" onclick="sendNotify()">
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-                  Send Message
-                </button>
-              </div>
-            </div>
-
-            <div>
-              <div class="response-card" style="margin-top:0; margin-bottom:16px;">
-                <div class="response-header">
-                  <span class="response-title">POST /notify payload</span>
-                  <span class="response-time" style="color:var(--text-3)">from sessionStorage</span>
-                </div>
-                <div class="response-body" id="notify-payload-preview" style="color:var(--text-3); min-height:48px;">{ }</div>
-              </div>
-              <div class="response-card" id="notify-response" style="margin-top:0;">
-                <div class="response-header">
-                  <span class="response-title">Response</span>
-                  <div class="response-meta">
-                    <span id="notify-status" class="response-status" style="display:none"></span>
-                    <span id="notify-time" class="response-time"></span>
-                  </div>
-                </div>
-                <div class="response-body" id="notify-body" style="color:var(--text-3)">Response will appear here…</div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- ── DM Panel ── -->
-        <div id="panel-dm" class="panel">
-          <div class="panel-grid">
-            <div class="card">
-              <div class="card-title"><span class="card-title-icon">✉️</span> Direct Message</div>
-              <div class="form-fields">
-                <div class="field">
-                  <label for="dm-user">User *</label>
-                  <input id="dm-user" type="text" placeholder="@username · user@email.com · U0XXXXXXX" />
-                  <span class="hint">Slack username, email, or User ID</span>
-                </div>
-                <div class="field">
-                  <label for="dm-text">Message *</label>
-                  <textarea id="dm-text" placeholder="Type your direct message here…" rows="4"></textarea>
-                </div>
-                <button class="btn btn-primary btn-full" id="dm-btn" onclick="sendDm()">
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-                  Send DM
-                </button>
-              </div>
-            </div>
-
-            <div>
-              <div class="response-card" id="dm-response" style="margin-top:0;">
-                <div class="response-header">
-                  <span class="response-title">Response</span>
-                  <div class="response-meta">
-                    <span id="dm-status" class="response-status" style="display:none"></span>
-                    <span id="dm-time" class="response-time"></span>
-                  </div>
-                </div>
-                <div class="response-body" id="dm-body" style="color:var(--text-3)">Response will appear here…</div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- ── Join Panel ── -->
-        <div id="panel-join" class="panel">
-          <div class="panel-grid">
-            <div class="card">
-              <div class="card-title"><span class="card-title-icon">🔗</span> Add Bot to Channel</div>
-              <div class="form-fields">
-                <div class="field">
-                  <label for="j-channel">Channel *</label>
-                  <input id="j-channel" type="text" placeholder="general or C0XXXXXXX" />
-                  <span class="hint">Bot will join this channel so it can post messages</span>
-                </div>
-                <button class="btn btn-primary btn-full" id="join-btn" onclick="sendJoin()">
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                  Join Channel
-                </button>
-              </div>
-            </div>
-
-            <div>
-              <div class="response-card" id="join-response" style="margin-top:0;">
-                <div class="response-header">
-                  <span class="response-title">Response</span>
-                  <div class="response-meta">
-                    <span id="join-status" class="response-status" style="display:none"></span>
-                    <span id="join-time" class="response-time"></span>
-                  </div>
-                </div>
-                <div class="response-body" id="join-body" style="color:var(--text-3)">Response will appear here…</div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-      </div><!-- /panels -->
-    </div><!-- /content -->
-  </main>
+    </div>
+  </div>
 </div>
+
+<div class="drawer-overlay" id="drawer-overlay" onclick="toggleDrawer(false)"></div>
+<aside class="drawer" id="drawer">
+  <div class="drawer-head">
+    <span>Settings</span>
+    <button class="icon-btn" onclick="toggleDrawer(false)" style="width:28px;height:28px">✕</button>
+  </div>
+  <div>
+    <div class="section-label">Bot config</div>
+    <div class="field">
+      <label for="cfg-token">Bot Token</label>
+      <div class="input-wrap">
+        <input id="cfg-token" type="password" class="token-input" placeholder="xoxb-..." autocomplete="off" />
+        <button type="button" class="eye-btn" onclick="toggleToken()">👁</button>
+      </div>
+    </div>
+    <div class="field">
+      <label for="cfg-channel">Default Channel</label>
+      <input id="cfg-channel" type="text" placeholder="general" />
+      <span class="hint">Jab channel na likho tab ye use hoga</span>
+    </div>
+    <button type="button" class="btn btn-primary" id="save-btn" onclick="saveConfig()">Save Config</button>
+    <button type="button" class="btn btn-ghost" id="fetch-config-btn" onclick="fetchConfig()">Fetch from Server</button>
+    <div id="config-info" class="config-info"></div>
+  </div>
+</aside>
 
 <div id="toast-container"></div>
 
 <script>
   const SESSION_KEY = 'qiko_slack_config';
 
-  // ── Session storage helpers ──────────────────────────────
+  // ── Natural language parser ───────────────────────────────
+  function parseCommand(raw) {
+    const input = raw.trim();
+    if (!input) return { type: 'error', error: 'Kuch likho pehle.' };
+
+    const SEND = 'send\\s+message\\s+to';
+
+    // <text> send message to #channel
+    const sendChBefore = input.match(new RegExp(`^(.+?)\\s+${SEND}\\s+#(\\w[\\w-]*)\\s*$`, 'i'));
+    if (sendChBefore) {
+      const text = sendChBefore[1].trim();
+      if (!text) return { type: 'error', error: 'Message text missing.' };
+      return { type: 'notify', text, channel: sendChBefore[2] };
+    }
+
+    // send message to #channel <text>
+    const sendChAfter = input.match(new RegExp(`^${SEND}\\s+#(\\w[\\w-]*)\\s+(.+)$`, 'i'));
+    if (sendChAfter) {
+      return { type: 'notify', text: sendChAfter[2].trim(), channel: sendChAfter[1] };
+    }
+
+    // send message to #channel (no text → default)
+    const sendChOnly = input.match(new RegExp(`^${SEND}\\s+#(\\w[\\w-]*)\\s*$`, 'i'));
+    if (sendChOnly) {
+      return { type: 'notify', text: 'Hello', channel: sendChOnly[1] };
+    }
+
+    // <text> send message to @user
+    const sendDmBefore = input.match(new RegExp(`^(.+?)\\s+${SEND}\\s+@(\\w[\\w.-]*)\\s*$`, 'i'));
+    if (sendDmBefore) {
+      const text = sendDmBefore[1].trim();
+      if (!text) return { type: 'error', error: 'Message text missing.' };
+      return { type: 'dm', user: '@' + sendDmBefore[2], text };
+    }
+
+    // send message to @user <text>
+    const sendDmAfter = input.match(new RegExp(`^${SEND}\\s+@(\\w[\\w.-]*)\\s+(.+)$`, 'i'));
+    if (sendDmAfter) {
+      return { type: 'dm', user: '@' + sendDmAfter[1], text: sendDmAfter[2].trim() };
+    }
+
+    // send message to @user (no text → default)
+    const sendDmOnly = input.match(new RegExp(`^${SEND}\\s+@(\\w[\\w.-]*)\\s*$`, 'i'));
+    if (sendDmOnly) {
+      return { type: 'dm', user: '@' + sendDmOnly[1], text: 'Hello' };
+    }
+
+    const stripTail = (s) =>
+      s.replace(/\s+(?:message|msg)\s*(?:karo?|kro|bhejo|send|de|do|kar)\s*$/i, '').trim();
+
+    // DM: @user ko <text> [message karo]
+    const dm = input.match(/^@(\w[\w.-]*)\s+ko\s+(.+)$/i);
+    if (dm) {
+      const text = stripTail(dm[2]);
+      if (!text) return { type: 'error', error: '@user ke baad message likho.' };
+      return { type: 'dm', user: '@' + dm[1], text };
+    }
+
+    // Email DM: user@mail.com ko ...
+    const dmEmail = input.match(/^([\w.+-]+@[\w.-]+\.\w+)\s+ko\s+(.+)$/i);
+    if (dmEmail) {
+      const text = stripTail(dmEmail[2]);
+      return { type: 'dm', user: dmEmail[1], text };
+    }
+
+    // Channel quoted: <text> channel 'name' ...
+    const chQ = input.match(/^(.+?)\s+channel\s+['"]([^'"]+)['"]\s*(?:ka\s+)?(?:message|msg)?\s*(?:kro|karo|bhejo|send|kar[o]?|de|do)?\s*$/i);
+    if (chQ) {
+      const text = chQ[1].trim();
+      if (!text) return { type: 'error', error: 'Message text missing.' };
+      return { type: 'notify', text, channel: chQ[2].trim() };
+    }
+
+    // channel #name or channel name
+    const ch = input.match(/^(.+?)\s+channel\s+#?(\S+)\s*(?:ka\s+)?(?:message|msg)?\s*(?:kro|karo|bhejo|send)?\s*$/i);
+    if (ch) {
+      const text = ch[1].trim();
+      if (!text) return { type: 'error', error: 'Message text missing.' };
+      return { type: 'notify', text, channel: ch[2].replace(/^#/, '') };
+    }
+
+    // #channel at end
+    const hash = input.match(/^(.+?)\s+#(\w[\w-]*)\s*$/);
+    if (hash) {
+      return { type: 'notify', text: hash[1].trim(), channel: hash[2] };
+    }
+
+    // join channel 'x'
+    const joinQ = input.match(/^(?:join|add)\s+(?:bot\s+)?(?:to\s+)?channel\s+['"]([^'"]+)['"]/i);
+    if (joinQ) return { type: 'join', channel: joinQ[1] };
+
+    const join = input.match(/^(?:join|add)\s+(?:channel\s+)?#?(\S+)/i);
+    if (join) return { type: 'join', channel: join[1] };
+
+    // Plain text → default channel from session
+    return { type: 'notify', text: input };
+  }
+
+  // ── Session / config ──────────────────────────────────────
   function getStoredConfig() {
     try { return JSON.parse(sessionStorage.getItem(SESSION_KEY) || '{}'); }
     catch { return {}; }
@@ -555,15 +694,13 @@
     sessionStorage.setItem(SESSION_KEY, JSON.stringify(cfg));
     refreshConfigInfo();
     syncFormFromStorage();
+    updateStatusBadge(cfg);
   }
 
-  /** Merge server /config response into sessionStorage */
   function applyConfigFromApi(serverConfig, formToken) {
     const cfg = getStoredConfig();
     if (serverConfig?.channel) cfg.channel = serverConfig.channel;
     if (formToken) cfg.bot_token = formToken;
-    else if (serverConfig?.bot_token) cfg.bot_token = serverConfig.bot_token;
-    if (serverConfig?.bot_token_hint) cfg.bot_token_hint = serverConfig.bot_token_hint;
     if (serverConfig?.source) cfg.source = serverConfig.source;
     storeConfig(cfg);
     return cfg;
@@ -572,109 +709,9 @@
   function syncFormFromStorage() {
     const cfg = getStoredConfig();
     if (cfg.bot_token) document.getElementById('cfg-token').value = cfg.bot_token;
-    if (cfg.channel)   document.getElementById('cfg-channel').value = cfg.channel;
+    if (cfg.channel) document.getElementById('cfg-channel').value = cfg.channel;
   }
 
-  // ── Update status badge ──────────────────────────────────
-  function updateStatusBadge(cfg) {
-    const badge = document.getElementById('status-badge');
-    const text  = document.getElementById('status-text');
-    if (cfg.bot_token) {
-      badge.className = 'status-badge connected';
-      text.textContent = cfg.channel ? `#${cfg.channel}` : 'Connected';
-    } else {
-      badge.className = 'status-badge';
-      text.textContent = 'Not configured';
-    }
-  }
-
-  // ── Show config info strip ───────────────────────────────
-  function refreshConfigInfo() {
-    const cfg = getStoredConfig();
-    const info = document.getElementById('config-info');
-    if (cfg.bot_token) {
-      info.classList.add('visible');
-      document.getElementById('info-token').textContent =
-        cfg.bot_token.slice(0, 10) + '...' + cfg.bot_token.slice(-4);
-      document.getElementById('info-channel').textContent = cfg.channel || '(default)';
-      document.getElementById('info-source').textContent = cfg.source || 'sessionStorage';
-      updateStatusBadge(cfg);
-    } else {
-      info.classList.remove('visible');
-      updateStatusBadge({});
-    }
-  }
-
-  // ── Token visibility toggle ──────────────────────────────
-  function toggleToken() {
-    const input = document.getElementById('cfg-token');
-    const icon  = document.getElementById('eye-icon');
-    if (input.type === 'password') {
-      input.type = 'text';
-      icon.innerHTML = '<path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/>';
-    } else {
-      input.type = 'password';
-      icon.innerHTML = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
-    }
-  }
-
-  // ── Save config → POST /config + sessionStorage ──────────
-  async function saveConfig() {
-    const token   = document.getElementById('cfg-token').value.trim();
-    const channel = document.getElementById('cfg-channel').value.trim();
-    if (!token && !channel) { showToast('Provide at least bot_token or channel.', 'error'); return; }
-
-    const btn = document.getElementById('save-btn');
-    setLoading(btn, true);
-
-    const body = {};
-    if (token)   body.bot_token = token;
-    if (channel) body.channel   = channel;
-
-    try {
-      const res  = await fetch('/config', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-      const data = await res.json();
-
-      if (data.ok && data.config) {
-        applyConfigFromApi(data.config, token);
-        showToast('Config saved to server & sessionStorage', 'success');
-      } else {
-        showToast(data.error || 'Save failed', 'error');
-      }
-    } catch (err) {
-      showToast('Server unreachable: ' + err.message, 'error');
-    } finally {
-      setLoading(btn, false);
-    }
-  }
-
-  // ── Fetch config from server → sessionStorage ─────────────
-  async function fetchConfig() {
-    const btn = document.getElementById('fetch-config-btn');
-    setLoading(btn, true);
-    try {
-      const res  = await fetch('/config');
-      const data = await res.json();
-      if (data.ok && data.config) {
-        applyConfigFromApi(data.config);
-        showToast(`Loaded • channel: ${data.config.channel}`, 'info');
-      } else {
-        showToast(data.error || 'Fetch failed', 'error');
-      }
-    } catch (err) {
-      showToast('Could not reach server', 'error');
-    } finally {
-      setLoading(btn, false);
-    }
-  }
-
-  // ── Tab switching ─────────────────────────────────────────
-  function switchTab(name) {
-    document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === name));
-    document.querySelectorAll('.panel').forEach(p => p.classList.toggle('active', p.id === 'panel-' + name));
-  }
-
-  // ── Build payload with sessionStorage config ──────────────
   function buildPayload(overrides = {}) {
     const cfg = getStoredConfig();
     const payload = {};
@@ -682,130 +719,244 @@
     return { ...payload, ...overrides };
   }
 
-  function updatePayloadPreview() {
-    const el = document.getElementById('notify-payload-preview');
-    if (!el) return;
-    const text = document.getElementById('n-text').value.trim();
-    const channel = document.getElementById('n-channel').value.trim();
-    const threadTs = document.getElementById('n-thread').value.trim();
-    const body = buildPayload({ text: text || '(message)' });
-    if (channel) body.channel = channel;
-    if (threadTs) body.thread_ts = threadTs;
-    el.textContent = JSON.stringify(body, null, 2);
-  }
-
-  // ── Send notify ───────────────────────────────────────────
-  async function sendNotify() {
-    const text     = document.getElementById('n-text').value.trim();
-    const channel  = document.getElementById('n-channel').value.trim();
-    const threadTs = document.getElementById('n-thread').value.trim();
-    if (!text) { showToast('Message text is required', 'error'); return; }
-
-    const body = buildPayload({ text });
-    if (channel)  body.channel   = channel;
-    if (threadTs) body.thread_ts = threadTs;
-
-    updatePayloadPreview();
-    await apiCall('notify-btn', 'POST', '/notify', body, 'notify');
-  }
-
-  // ── Send DM ───────────────────────────────────────────────
-  async function sendDm() {
-    const user = document.getElementById('dm-user').value.trim();
-    const text = document.getElementById('dm-text').value.trim();
-    if (!user) { showToast('User is required (@username, email, or ID)', 'error'); return; }
-    if (!text) { showToast('Message text is required', 'error'); return; }
-
-    await apiCall('dm-btn', 'POST', '/dm', { user, text }, 'dm');
-  }
-
-  // ── Join channel ──────────────────────────────────────────
-  async function sendJoin() {
-    let channel = document.getElementById('j-channel').value.trim();
-    if (!channel) channel = getStoredConfig().channel || '';
-    if (!channel) { showToast('Channel is required (or save config first)', 'error'); return; }
-
-    await apiCall('join-btn', 'POST', '/join', buildPayload({ channel }), 'join');
-  }
-
-  // ── Generic API call ──────────────────────────────────────
-  async function apiCall(btnId, method, path, body, prefix) {
-    const btn = document.getElementById(btnId);
-    setLoading(btn, true);
-    const t0 = Date.now();
-
-    try {
-      const res  = await fetch(path, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-      const data = await res.json();
-      const ms   = Date.now() - t0;
-      showResponse(prefix, data, res.ok, ms);
-      if (data.ok) showToast('Success!', 'success');
-      else         showToast(data.error || 'Request failed', 'error');
-    } catch (err) {
-      showResponse(prefix, { ok: false, error: err.message }, false, Date.now() - t0);
-      showToast('Network error: ' + err.message, 'error');
-    } finally {
-      setLoading(btn, false);
+  function updateStatusBadge(cfg) {
+    const badge = document.getElementById('status-badge');
+    const text = document.getElementById('status-text');
+    const has = cfg.bot_token || cfg.channel;
+    if (has) {
+      badge.className = 'status-badge connected';
+      text.textContent = cfg.channel ? '#' + cfg.channel : 'Ready';
+    } else {
+      badge.className = 'status-badge';
+      text.textContent = 'Not configured';
     }
   }
 
-  // ── Render response ───────────────────────────────────────
-  function showResponse(prefix, data, isOk, ms) {
-    const bodyEl   = document.getElementById(prefix + '-body');
-    const statusEl = document.getElementById(prefix + '-status');
-    const timeEl   = document.getElementById(prefix + '-time');
-
-    bodyEl.innerHTML   = syntaxHighlight(JSON.stringify(data, null, 2));
-    statusEl.style.display = '';
-    statusEl.textContent   = isOk ? '200 OK' : 'Error';
-    statusEl.className     = 'response-status ' + (isOk ? 'ok' : 'err');
-    timeEl.textContent     = ms + 'ms';
+  function refreshConfigInfo() {
+    const cfg = getStoredConfig();
+    const el = document.getElementById('config-info');
+    if (cfg.bot_token || cfg.channel) {
+      el.classList.add('visible');
+      el.innerHTML =
+        (cfg.bot_token ? 'Token: ' + cfg.bot_token.slice(0, 10) + '…<br>' : '') +
+        (cfg.channel ? 'Channel: ' + cfg.channel : '');
+    } else {
+      el.classList.remove('visible');
+    }
+    updateStatusBadge(cfg);
   }
 
-  // ── JSON syntax highlight ─────────────────────────────────
-  function syntaxHighlight(json) {
-    return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, m => {
-      if (/^"/.test(m)) {
-        if (/:$/.test(m)) return `<span class="json-key">${m}</span>`;
-        return `<span class="json-str">${m}</span>`;
+  function toggleDrawer(open) {
+    const on = open !== false && !document.getElementById('drawer').classList.contains('open');
+    const next = typeof open === 'boolean' ? open : !document.getElementById('drawer').classList.contains('open');
+    document.getElementById('drawer').classList.toggle('open', next);
+    document.getElementById('drawer-overlay').classList.toggle('open', next);
+  }
+
+  function toggleToken() {
+    const input = document.getElementById('cfg-token');
+    input.type = input.type === 'password' ? 'text' : 'password';
+  }
+
+  async function saveConfig() {
+    const token = document.getElementById('cfg-token').value.trim();
+    const channel = document.getElementById('cfg-channel').value.trim();
+    if (!token && !channel) { showToast('Token ya channel chahiye', 'error'); return; }
+    const body = {};
+    if (token) body.bot_token = token;
+    if (channel) body.channel = channel;
+    try {
+      const res = await fetch('/config', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      const data = await res.json();
+      if (data.ok && data.config) {
+        applyConfigFromApi(data.config, token);
+        addBotMessage('Config save ho gaya ✓', 'success', JSON.stringify(data.config, null, 2));
+        showToast('Config saved', 'success');
+      } else {
+        showToast(data.error || 'Failed', 'error');
       }
-      if (/true|false/.test(m)) return `<span class="json-bool">${m}</span>`;
-      if (/null/.test(m))       return `<span class="json-null">${m}</span>`;
-      return `<span class="json-num">${m}</span>`;
-    });
+    } catch (e) {
+      showToast(e.message, 'error');
+    }
   }
 
-  // ── Loading state ─────────────────────────────────────────
-  function setLoading(btn, on) {
-    btn.disabled = on;
-    if (on) btn.classList.add('btn-loading');
-    else    btn.classList.remove('btn-loading');
+  async function fetchConfig() {
+    try {
+      const res = await fetch('/config');
+      const data = await res.json();
+      if (data.ok && data.config) {
+        applyConfigFromApi(data.config);
+        showToast('Server config loaded', 'success');
+      }
+    } catch {
+      showToast('Server unreachable', 'error');
+    }
   }
 
-  // ── Toast ─────────────────────────────────────────────────
-  function showToast(msg, type = 'info') {
-    const icons = { success: '✅', error: '❌', info: 'ℹ️' };
+  // ── Chat UI ───────────────────────────────────────────────
+  function hideWelcome() {
+    const w = document.getElementById('welcome');
+    if (w) w.remove();
+  }
+
+  function addUserMessage(text) {
+    hideWelcome();
     const el = document.createElement('div');
-    el.className = `toast ${type}`;
-    el.innerHTML = `<span class="toast-icon">${icons[type]}</span><span class="toast-msg">${msg}</span>`;
+    el.className = 'msg user';
+    el.innerHTML = `<div class="msg-bubble">${escapeHtml(text)}</div><div class="msg-meta">You</div>`;
+    document.getElementById('messages').appendChild(el);
+    scrollMessages();
+    return el;
+  }
+
+  function addBotMessage(text, kind, detail) {
+    hideWelcome();
+    const el = document.createElement('div');
+    el.className = 'msg bot ' + (kind || '');
+    let html = `<div class="msg-bubble">${escapeHtml(text)}</div>`;
+    if (detail) html += `<div class="msg-detail">${escapeHtml(detail)}</div>`;
+    html += `<div class="msg-meta">Qiko</div>`;
+    el.innerHTML = html;
+    document.getElementById('messages').appendChild(el);
+    scrollMessages();
+  }
+
+  function escapeHtml(s) {
+    return String(s)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  function scrollMessages() {
+    const m = document.getElementById('messages');
+    m.scrollTop = m.scrollHeight;
+  }
+
+  function useExample(btn) {
+    const input = document.getElementById('chat-input');
+    input.value = btn.textContent.trim();
+    input.focus();
+    autoResize(input);
+  }
+
+  function autoResize(el) {
+    el.style.height = 'auto';
+    el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+  }
+
+  function describeAction(cmd) {
+    if (cmd.type === 'dm') return `DM → ${cmd.user}: "${cmd.text}"`;
+    if (cmd.type === 'notify') {
+      const ch = cmd.channel || getStoredConfig().channel || '(default)';
+      return `#${ch}: "${cmd.text}"`;
+    }
+    if (cmd.type === 'join') return `Join #${cmd.channel}`;
+    return '';
+  }
+
+  async function executeCommand(cmd) {
+    if (cmd.type === 'error') {
+      addBotMessage(cmd.error, 'error');
+      return;
+    }
+
+    const t0 = Date.now();
+    let path, body;
+
+    if (cmd.type === 'dm') {
+      path = '/dm';
+      body = { user: cmd.user, text: cmd.text };
+    } else if (cmd.type === 'join') {
+      path = '/join';
+      body = buildPayload({ channel: cmd.channel });
+    } else {
+      path = '/notify';
+      body = buildPayload({ text: cmd.text });
+      if (cmd.channel) body.channel = cmd.channel;
+    }
+
+    addBotMessage('Bhej raha hoon…', '', describeAction(cmd) + '\n' + JSON.stringify(body, null, 2));
+
+    const pending = document.getElementById('messages').lastElementChild;
+
+    try {
+      const res = await fetch(path, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      const ms = Date.now() - t0;
+      pending.remove();
+
+      if (data.ok) {
+        let msg = 'Message bhej diya ✓';
+        if (cmd.type === 'dm') msg = `DM sent to ${data.user_id || cmd.user}`;
+        if (cmd.type === 'notify') msg = `Posted to #${data.channel_name || cmd.channel || 'channel'}`;
+        if (cmd.type === 'join') msg = `Bot joined #${data.channel_name || cmd.channel}`;
+        addBotMessage(msg, 'success', JSON.stringify(data, null, 2) + `\n(${ms}ms)`);
+        showToast('Done', 'success');
+      } else {
+        addBotMessage(data.error || 'Failed', 'error', JSON.stringify(data, null, 2));
+        showToast(data.error || 'Failed', 'error');
+      }
+    } catch (err) {
+      pending.remove();
+      addBotMessage('Error: ' + err.message, 'error');
+      showToast(err.message, 'error');
+    }
+  }
+
+  async function handleSend() {
+    const input = document.getElementById('chat-input');
+    const text = input.value.trim();
+    if (!text) return;
+
+    const btn = document.getElementById('send-btn');
+    btn.disabled = true;
+    btn.classList.add('loading');
+
+    addUserMessage(text);
+    input.value = '';
+    autoResize(input);
+
+    const cmd = parseCommand(text);
+    await executeCommand(cmd);
+
+    btn.disabled = false;
+    btn.classList.remove('loading');
+    input.focus();
+  }
+
+  function showToast(msg, type) {
+    const el = document.createElement('div');
+    el.className = 'toast ' + (type || '');
+    el.textContent = msg;
     document.getElementById('toast-container').appendChild(el);
-    setTimeout(() => {
-      el.classList.add('fade-out');
-      setTimeout(() => el.remove(), 320);
-    }, 3200);
+    setTimeout(() => el.remove(), 3000);
   }
 
   // ── Init ──────────────────────────────────────────────────
   (function init() {
+    const input = document.getElementById('chat-input');
+    input.addEventListener('input', () => autoResize(input));
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        handleSend();
+      }
+    });
+
     syncFormFromStorage();
     refreshConfigInfo();
-    updatePayloadPreview();
-    ['n-text', 'n-channel', 'n-thread'].forEach(id =>
-      document.getElementById(id).addEventListener('input', updatePayloadPreview)
-    );
+
     fetch('/config')
-      .then(r => r.json())
-      .then(data => { if (data.ok && data.config) applyConfigFromApi(data.config); })
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.ok && data.config) applyConfigFromApi(data.config);
+      })
       .catch(() => {});
   })();
 </script>
