@@ -1,6 +1,10 @@
 import { getSlackClient, resolveChannelId } from "./client.js";
 import { notifyConfig } from "./config.js";
 import { ensureBotInChannel } from "./joinChannel.js";
+import {
+  prepareSlackSegments,
+  splitTextAndTables,
+} from "./slackFormatting.js";
 
 export { resolveChannelId } from "./client.js";
 
@@ -113,6 +117,37 @@ async function expandUserMentions(text: string): Promise<string> {
   return out;
 }
 
+async function prepareSlackMessage(rawText: string): Promise<{
+  text: string;
+  blocks?: Record<string, unknown>[];
+}> {
+  const segments = splitTextAndTables(rawText);
+  for (const seg of segments) {
+    if (seg.type === "text") {
+      seg.content = await expandUserMentions(seg.content);
+    } else {
+      seg.lines = await Promise.all(
+        seg.lines.map((line) => expandUserMentions(line))
+      );
+    }
+  }
+  return prepareSlackSegments(segments);
+}
+
+async function postSlackMessage(
+  channel: string,
+  prepared: { text: string; blocks?: Record<string, unknown>[] },
+  threadTs?: string
+) {
+  return getSlackClient().chat.postMessage({
+    channel,
+    text: prepared.text,
+    mrkdwn: true,
+    ...(prepared.blocks ? { blocks: prepared.blocks } : {}),
+    ...(threadTs ? { thread_ts: threadTs } : {}),
+  });
+}
+
 /**
  * Send a direct message (DM) to a Slack user by User ID or email.
  * Requires im:write scope.
@@ -127,12 +162,9 @@ export async function sendDirectMessage(
   const dmChannelId = openResult.channel?.id;
   if (!dmChannelId) throw new Error(`Could not open DM channel with user "${userId}".`);
 
-  const text = await expandUserMentions(options.text);
+  const prepared = await prepareSlackMessage(options.text);
 
-  const result = await getSlackClient().chat.postMessage({
-    channel: dmChannelId,
-    text,
-  });
+  const result = await postSlackMessage(dmChannelId, prepared);
 
   if (!result.ok || !result.ts) {
     throw new Error(result.error ?? "chat.postMessage failed for DM");
@@ -174,21 +206,13 @@ export async function sendSlackMessage(
     await ensureBotInChannel(channelId);
   }
 
-  const text = await expandUserMentions(options.text);
+  const prepared = await prepareSlackMessage(options.text);
 
-  let result = await getSlackClient().chat.postMessage({
-    channel: channelId,
-    text,
-    ...(options.threadTs ? { thread_ts: options.threadTs } : {}),
-  });
+  let result = await postSlackMessage(channelId, prepared, options.threadTs);
 
   if (!result.ok && result.error === "not_in_channel" && !autoJoin) {
     await ensureBotInChannel(channelId);
-    result = await getSlackClient().chat.postMessage({
-      channel: channelId,
-      text,
-      ...(options.threadTs ? { thread_ts: options.threadTs } : {}),
-    });
+    result = await postSlackMessage(channelId, prepared, options.threadTs);
   }
 
   if (!result.ok || !result.ts) {
