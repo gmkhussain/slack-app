@@ -3,3 +3,8 @@ dist/
 .env
 *.log
 .ngrok-bin/ngrok.exe
+
+# Runtime config — contains secrets (bot tokens), never commit
+runtime-config.json
+
+.kombai/
