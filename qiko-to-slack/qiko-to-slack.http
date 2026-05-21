@@ -1,9 +1,14 @@
 @baseUrl = http://localhost:3011
-@channel = C0B4P79HLE9
 
-@token = xoxb----hidden---
+@channel = 'general'
+# C0B4P79HLE9
+
+
+@token = xoxb-
 
 @thread_ts = 1779357592.930739
+
+@slack_user = 'hussain.linkstar@gmail.com'
 
 ### ── CONFIG ──────────────────────────────────────────────
 
@@ -36,6 +41,28 @@ Content-Type: application/json
 
 {
   "bot_token": "{{token}}"
+}
+
+
+### ── DIRECT MESSAGE (DM) ────────────────────────────────
+
+### DM by User ID
+POST {{baseUrl}}/dm
+Content-Type: application/json
+
+{
+  "user": "U0B4FAHG4F8",
+  "text": "Hello! This is a direct message from Qiko."
+}
+
+
+### DM by email
+POST {{baseUrl}}/dm
+Content-Type: application/json
+
+{
+  "user": "{{slack_user}}",
+  "text": "Hello! This is a direct message from Qiko."
 }
 
 
