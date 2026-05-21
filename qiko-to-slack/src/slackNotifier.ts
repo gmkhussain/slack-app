@@ -17,35 +17,78 @@ export interface SendDirectMessageResult {
 }
 
 /**
- * Resolve a Slack user ID from an email address.
- * Requires users:read.email scope.
+ * Resolve a Slack user ID from a User ID, @username, display name, or email.
+ * - User ID  (U…)       — used directly, no API call
+ * - Email    (x@y.z)    — users.lookupByEmail  (requires users:read.email)
+ * - @username / name    — users.list scan      (requires users:read)
  */
 async function resolveUserId(userRef: string): Promise<string> {
-  const trimmed = userRef.trim();
+  const trimmed = userRef.trim().replace(/^@/, ""); // strip leading @
+
+  // Already a Slack User ID
   if (/^U[A-Z0-9]+$/i.test(trimmed)) return trimmed.toUpperCase();
 
+  // Email address
+  if (trimmed.includes("@")) {
+    try {
+      const result = await getSlackClient().users.lookupByEmail({ email: trimmed });
+      const userId = result.user?.id;
+      if (!userId) throw new Error(`User with email "${trimmed}" not found.`);
+      return userId;
+    } catch (err: unknown) {
+      const code =
+        err && typeof err === "object" && "data" in err
+          ? (err as { data?: { error?: string } }).data?.error
+          : undefined;
+      if (code === "users_not_found") throw new Error(`No Slack user found with email "${trimmed}".`);
+      if (code === "missing_scope") {
+        throw new Error(
+          `Cannot look up by email: missing "users:read.email" scope.\n` +
+            `Fix: Slack app → OAuth & Permissions → add "users:read.email" → Reinstall.\n` +
+            `Or pass User ID directly (e.g. "U0B4FAHG4F8").`
+        );
+      }
+      throw err;
+    }
+  }
+
+  // @username or display name — scan users.list
+  const target = trimmed.toLowerCase();
+  let cursor: string | undefined;
   try {
-    const result = await getSlackClient().users.lookupByEmail({ email: trimmed });
-    const userId = result.user?.id;
-    if (!userId) throw new Error(`User with email "${trimmed}" not found.`);
-    return userId;
+    do {
+      const result = await getSlackClient().users.list({ limit: 200, cursor });
+      for (const member of result.members ?? []) {
+        if (member.deleted || member.is_bot) continue;
+        const nameMatch = member.name?.toLowerCase() === target;
+        const displayMatch = member.profile?.display_name?.toLowerCase() === target;
+        const realMatch = member.profile?.real_name?.toLowerCase() === target;
+        if (nameMatch || displayMatch || realMatch) {
+          if (!member.id) continue;
+          return member.id;
+        }
+      }
+      cursor = result.response_metadata?.next_cursor || undefined;
+    } while (cursor);
   } catch (err: unknown) {
     const code =
       err && typeof err === "object" && "data" in err
         ? (err as { data?: { error?: string } }).data?.error
         : undefined;
-    if (code === "users_not_found") {
-      throw new Error(`No Slack user found with email "${trimmed}".`);
-    }
     if (code === "missing_scope") {
       throw new Error(
-        `Cannot look up user by email: missing "users:read.email" scope.\n` +
-          `Fix: Slack app → OAuth & Permissions → add "users:read.email" → Reinstall.\n` +
-          `Or pass the User ID directly (e.g. "U0B4FAHG4F8").`
+        `Cannot look up by username: missing "users:read" scope.\n` +
+          `Fix: Slack app → OAuth & Permissions → add "users:read" → Reinstall.\n` +
+          `Or pass User ID directly (e.g. "U0B4FAHG4F8").`
       );
     }
     throw err;
   }
+
+  throw new Error(
+    `No Slack user found with username "@${trimmed}". ` +
+      `Try User ID (U…) or email instead.`
+  );
 }
 
 /**

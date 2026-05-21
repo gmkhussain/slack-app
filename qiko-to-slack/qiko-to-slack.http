@@ -10,6 +10,8 @@
 
 @slack_user = 'hussain.linkstar@gmail.com'
 
+@slack_username = hussain
+
 ### ── CONFIG ──────────────────────────────────────────────
 
 ### Get current config (shows active bot_token hint & channel)
@@ -45,6 +47,16 @@ Content-Type: application/json
 
 
 ### ── DIRECT MESSAGE (DM) ────────────────────────────────
+
+### DM by @username
+POST {{baseUrl}}/dm
+Content-Type: application/json
+
+{
+  "user": "@{{slack_username}}",
+  "text": "Hello! This is a direct message from Qiko."
+}
+
 
 ### DM by User ID
 POST {{baseUrl}}/dm
